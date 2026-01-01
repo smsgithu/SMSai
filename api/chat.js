@@ -6,7 +6,11 @@ export default async function handler(req, res) {
   try {
     const { messages } = req.body;
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: "Invalid messages format" });
+    }
+
+    const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -14,31 +18,27 @@ export default async function handler(req, res) {
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20240620",
-        max_tokens: 800,
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 600,
         messages
       })
     });
 
-    const data = await response.json();
+    const data = await anthropicRes.json();
 
-    if (!response.ok) {
-      console.error("Anthropic error:", data);
-      return res.status(response.status).json({
-        anthropic_status: response.status,
+    if (!anthropicRes.ok) {
+      return res.status(500).json({
+        anthropic_status: anthropicRes.status,
         anthropic_raw_response: data
       });
     }
 
-    const text =
-      data?.content
-        ?.filter(block => block.type === "text")
-        ?.map(block => block.text)
-        ?.join("\n") || "No response returned.";
+    res.status(200).json(data);
 
-    return res.status(200).json({ text });
   } catch (err) {
-    console.error("Server error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({
+      error: "Internal server error",
+      details: err.message
+    });
   }
 }
