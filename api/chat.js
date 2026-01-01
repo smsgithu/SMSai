@@ -10,16 +10,22 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Invalid messages format" });
     }
 
-    // 🔑 Convert OpenAI-style messages → Anthropic blocks
-    const anthropicMessages = messages.map(m => ({
-      role: m.role === "assistant" ? "assistant" : "user",
-      content: [
-        {
-          type: "text",
-          text: m.content
-        }
-      ]
-    }));
+    // ✅ Only send USER messages to Anthropic
+    const anthropicMessages = messages
+      .filter(m => m.role === "user" && typeof m.content === "string")
+      .map(m => ({
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: m.content
+          }
+        ]
+      }));
+
+    if (anthropicMessages.length === 0) {
+      return res.status(400).json({ error: "No valid user messages" });
+    }
 
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
