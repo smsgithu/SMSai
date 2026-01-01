@@ -10,7 +10,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Invalid messages format" });
     }
 
-    // ✅ Only send USER messages to Anthropic
+    // Only send USER messages to Anthropic
     const anthropicMessages = messages
       .filter(m => m.role === "user" && typeof m.content === "string")
       .map(m => ({
