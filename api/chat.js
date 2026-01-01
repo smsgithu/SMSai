@@ -1,9 +1,18 @@
 export default async function handler(req, res) {
+  // Allow only POST (your frontend uses POST)
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  // Sanity check: env var
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(500).json({
+      error: "Missing ANTHROPIC_API_KEY environment variable",
+    });
+  }
+
   try {
+    // Minimal, guaranteed-valid Anthropic request
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -13,25 +22,41 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "claude-3-sonnet-20240229",
-        max_tokens: 300,
+        max_tokens: 200,
         messages: [
           {
             role: "user",
-            content: [{ type: "text", text: "Say hello" }],
+            content: [
+              {
+                type: "text",
+                text: "Say hello in one sentence.",
+              },
+            ],
           },
         ],
       }),
     });
 
-    const text = await response.text();
+    // Read raw text so NOTHING is swallowed
+    const rawText = await response.text();
 
+    // If Anthropic rejected the request, expose it directly
+    if (!response.ok) {
+      return res.status(response.status).json({
+        anthropic_status: response.status,
+        anthropic_raw_response: rawText,
+      });
+    }
+
+    // Success path
     return res.status(200).json({
-      status: response.status,
-      raw: text,
+      success: true,
+      anthropic_raw_response: rawText,
     });
   } catch (err) {
+    // Network / runtime failure
     return res.status(500).json({
-      error: err.message,
+      runtime_error: err.message,
     });
   }
 }
