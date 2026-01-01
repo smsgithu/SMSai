@@ -4,51 +4,55 @@ export default async function handler(req, res) {
   }
 
   try {
-    const anthropicRes = await fetch(
-      "https://api.anthropic.com/v1/messages",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": process.env.ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: "claude-3-5-sonnet-20241022",
-          max_tokens: 600,
-          system:
-            "You are an educational AI assistant for Solana Made Simple. Teach clearly, emphasize security, and avoid financial advice.",
-          messages: req.body.messages,
-        }),
-      }
-    );
-
-    const data = await anthropicRes.json();
-
-    // 🔴 If Anthropic returns an error, surface it
-    if (!data.content || !Array.isArray(data.content)) {
-      console.error("Anthropic error:", data);
-      return res.status(500).json({
-        content: [
-          {
-            type: "text",
-            text: "The AI service returned an unexpected response. Please try again.",
-          },
-        ],
-      });
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new Error("Missing ANTHROPIC_API_KEY");
     }
 
-    // ✅ Always return a valid content array
+    // 🔧 Convert OpenAI-style messages → Anthropic format
+    const anthropicMessages = req.body.messages.map((m) => ({
+      role: m.role === "assistant" ? "assistant" : "user",
+      content: [
+        {
+          type: "text",
+          text: m.content,
+        },
+      ],
+    }));
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-3-sonnet-20240229",
+        max_tokens: 600,
+        system:
+          "You are an educational AI assistant for Solana Made Simple. Explain concepts clearly, emphasize security, and avoid financial advice.",
+        messages: anthropicMessages,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Anthropic error:", data);
+      throw new Error("Anthropic API request failed");
+    }
+
     return res.status(200).json({
       content: data.content,
     });
   } catch (err) {
-    console.error(err);
+    console.error("Chat API error:", err.message);
     return res.status(500).json({
       content: [
         {
           type: "text",
-          text: "Unable to reach the AI service. Please try again later.",
+          text:
+            "The AI service is temporarily unavailable. Please try again.",
         },
       ],
     });
