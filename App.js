@@ -1,74 +1,82 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, BookOpen, Wallet, Coins, TrendingUp, Shield, Sparkles } from 'lucide-react';
+import {
+  Send,
+  Loader2,
+  BookOpen,
+  Wallet,
+  Coins,
+  TrendingUp,
+  Shield,
+  Sparkles,
+  Home
+} from 'lucide-react';
+
+const WELCOME_MESSAGE = {
+  role: 'assistant',
+  content:
+    "GM 👋 Welcome to **Solana Made Simple AI**.\n\nI’m your guide to the Solana ecosystem — from wallets and seed phrases to staking, DeFi, memecoins, RWAs, and how Solana actually works under the hood.\n\nNo hype. Just clarity. What do you want to learn?"
+};
 
 const SolanaAssistant = () => {
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content:
-        "Hey! Welcome to Solana Made Simple. I'm your AI guide to everything Solana — from wallets and seed phrases to DeFi, staking, memecoins, and RWAs. What would you like to learn today?"
-    }
-  ]);
-
+  const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
   const quickPrompts = [
-    { icon: Wallet, text: 'How do I create a Solana wallet?', color: 'from-purple-500 to-pink-500' },
-    { icon: Shield, text: 'What are seed phrases?', color: 'from-blue-500 to-cyan-500' },
-    { icon: TrendingUp, text: 'Explain DeFi and staking', color: 'from-green-500 to-emerald-500' },
-    { icon: Coins, text: 'Tell me about Solana memecoins', color: 'from-orange-500 to-red-500' }
+    { icon: Wallet, text: 'How do wallets work?' },
+    { icon: Shield, text: 'What is a seed phrase?' },
+    { icon: TrendingUp, text: 'Explain DeFi and staking' },
+    { icon: Coins, text: 'How do Solana memecoins work?' }
   ];
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const resetChat = () => {
+    setMessages([WELCOME_MESSAGE]);
+    setInput('');
+    setLoading(false);
+  };
+
   const handleSubmit = async (promptText = null) => {
     const userMessage = promptText || input.trim();
     if (!userMessage || loading) return;
 
-    const updatedMessages = [...messages, { role: 'user', content: userMessage }];
+    const updatedMessages = [
+      ...messages,
+      { role: 'user', content: userMessage }
+    ];
+
     setMessages(updatedMessages);
     setInput('');
     setLoading(true);
 
     try {
-      console.log('🔥 Sending request to /api/chat');
-
-      const response = await fetch('/api/chat', {
+      const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          messages: updatedMessages
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: updatedMessages })
       });
 
-      console.log('📡 Response status:', response.status);
-
-      if (!response.ok) {
-        throw new Error('API request failed');
+      if (!res.ok) {
+        throw new Error('AI request failed');
       }
 
-      const data = await response.json();
+      const data = await res.json();
 
-      const assistantMessage = data?.content
-        ?.filter(block => block.type === 'text')
-        .map(block => block.text)
-        .join('\n') || 'No response received.';
-
-      setMessages([...updatedMessages, { role: 'assistant', content: assistantMessage }]);
-    } catch (error) {
-      console.error(error);
+      setMessages([
+        ...updatedMessages,
+        { role: 'assistant', content: data.content }
+      ]);
+    } catch (err) {
       setMessages([
         ...updatedMessages,
         {
           role: 'assistant',
           content:
-            "I'm having trouble connecting right now. Please try again in a moment."
+            "⚠️ I’m having trouble connecting right now. Please try again in a moment."
         }
       ]);
     } finally {
@@ -87,14 +95,28 @@ const SolanaAssistant = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
       {/* Header */}
       <div className="bg-black/40 backdrop-blur-lg border-b border-purple-500/30 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-white" />
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white">
+                Solana Made Simple
+              </h1>
+              <p className="text-sm text-purple-300">
+                Education First · AI Powered
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">Solana Made Simple</h1>
-            <p className="text-sm text-purple-300">Education First · AI-Powered</p>
-          </div>
+
+          <button
+            onClick={resetChat}
+            className="flex items-center gap-2 text-purple-300 hover:text-white transition"
+          >
+            <Home className="w-5 h-5" />
+            <span className="text-sm">Home</span>
+          </button>
         </div>
       </div>
 
@@ -104,34 +126,35 @@ const SolanaAssistant = () => {
           {messages.map((msg, idx) => (
             <div
               key={idx}
-              className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${
+                msg.role === 'user' ? 'justify-end' : 'justify-start'
+              }`}
             >
               {msg.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <div className="w-8 h-8 mr-3 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                   <BookOpen className="w-5 h-5 text-white" />
                 </div>
               )}
-
               <div
-                className={`max-w-2xl rounded-2xl px-5 py-3 ${
+                className={`max-w-2xl px-5 py-3 rounded-2xl ${
                   msg.role === 'user'
                     ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-                    : 'bg-white/10 backdrop-blur-lg text-white border border-white/20'
+                    : 'bg-white/10 border border-white/20 text-white'
                 }`}
               >
-                <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                <p className="whitespace-pre-wrap leading-relaxed">
+                  {msg.content}
+                </p>
               </div>
             </div>
           ))}
 
           {loading && (
-            <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <div className="bg-white/10 backdrop-blur-lg rounded-2xl px-5 py-3 border border-white/20">
-                <Loader2 className="w-5 h-5 text-purple-300 animate-spin" />
-              </div>
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-5 h-5 text-purple-300 animate-spin" />
+              <span className="text-purple-300 text-sm">
+                Thinking…
+              </span>
             </div>
           )}
 
@@ -143,14 +166,14 @@ const SolanaAssistant = () => {
       {messages.length === 1 && (
         <div className="px-4 pb-4">
           <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {quickPrompts.map((prompt, idx) => (
+            {quickPrompts.map((p, i) => (
               <button
-                key={idx}
-                onClick={() => handleSubmit(prompt.text)}
-                className={`flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r ${prompt.color} text-white font-medium shadow-lg hover:scale-105 transition`}
+                key={i}
+                onClick={() => handleSubmit(p.text)}
+                className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-purple-700 to-pink-700 text-white hover:scale-105 transition"
               >
-                <prompt.icon className="w-5 h-5" />
-                {prompt.text}
+                <p.icon className="w-5 h-5" />
+                {p.text}
               </button>
             ))}
           </div>
@@ -158,7 +181,7 @@ const SolanaAssistant = () => {
       )}
 
       {/* Input */}
-      <div className="bg-black/40 backdrop-blur-lg border-t border-purple-500/30 px-4 py-4">
+      <div className="bg-black/40 border-t border-purple-500/30 px-4 py-4">
         <div className="max-w-4xl mx-auto flex gap-3">
           <input
             value={input}
@@ -166,14 +189,18 @@ const SolanaAssistant = () => {
             onKeyPress={handleKeyPress}
             placeholder="Ask anything about Solana…"
             disabled={loading}
-            className="flex-1 bg-white/10 border border-white/20 rounded-xl px-5 py-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="flex-1 rounded-xl px-5 py-3 bg-white/10 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
           <button
             onClick={() => handleSubmit()}
             disabled={loading || !input.trim()}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-6 py-3 flex items-center"
+            className="bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-3 rounded-xl text-white disabled:opacity-50"
           >
-            {loading ? <Loader2 className="animate-spin" /> : <Send />}
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
           </button>
         </div>
       </div>
