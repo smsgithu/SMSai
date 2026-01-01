@@ -8,16 +8,18 @@ export default async function handler(req, res) {
       throw new Error("Missing ANTHROPIC_API_KEY");
     }
 
-    // 🔧 Convert OpenAI-style messages → Anthropic format
-    const anthropicMessages = req.body.messages.map((m) => ({
-      role: m.role === "assistant" ? "assistant" : "user",
-      content: [
-        {
-          type: "text",
-          text: m.content,
-        },
-      ],
-    }));
+    // ✅ ONLY send user messages to Anthropic
+    const anthropicMessages = req.body.messages
+      .filter((m) => m.role === "user")
+      .map((m) => ({
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: m.content,
+          },
+        ],
+      }));
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -30,7 +32,7 @@ export default async function handler(req, res) {
         model: "claude-3-sonnet-20240229",
         max_tokens: 600,
         system:
-          "You are an educational AI assistant for Solana Made Simple. Explain concepts clearly, emphasize security, and avoid financial advice.",
+          "You are an educational AI assistant for Solana Made Simple. Explain clearly, emphasize security, and avoid financial advice.",
         messages: anthropicMessages,
       }),
     });
@@ -39,12 +41,10 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       console.error("Anthropic error:", data);
-      throw new Error("Anthropic API request failed");
+      throw new Error("Anthropic request failed");
     }
 
-    return res.status(200).json({
-      content: data.content,
-    });
+    return res.status(200).json({ content: data.content });
   } catch (err) {
     console.error("Chat API error:", err.message);
     return res.status(500).json({
