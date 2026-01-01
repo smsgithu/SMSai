@@ -14,18 +14,7 @@ import {
 const WELCOME_MESSAGE = {
   role: 'assistant',
   content:
-    "GM 👋 Welcome to Solana Made Simple.\n\nThis is a demo version of the SMS AI — an educational guide built to help you understand Solana from zero to power user.\n\nAsk about wallets, seed phrases, staking, DeFi, memecoins, RWAs, or how the Solana ecosystem actually works.\n\nNo hype. Just clarity. What do you want to learn?"
-};
-
-const DEMO_RESPONSES = {
-  wallet:
-    "A Solana wallet is your on-chain identity. It lets you hold SOL and tokens, interact with apps, and sign transactions. Popular wallets include Phantom and Solflare.\n\nYour wallet has a public address (safe to share) and a seed phrase (never share).",
-  seed:
-    "A seed phrase is a 12 or 24 word master key to your wallet. Anyone with it can access your funds.\n\nWrite it down offline. Never screenshot it. Never paste it into a website. No legit app will ever ask for it.",
-  defi:
-    "DeFi stands for Decentralized Finance. On Solana, this includes staking, lending, trading, and yield strategies — all powered by smart contracts instead of banks.\n\nStaking SOL helps secure the network and earns rewards.",
-  memecoins:
-    "Memecoins on Solana are fast-moving, high-risk culture assets. Some are experiments, some are jokes, some build real communities.\n\nMost fail. Never risk money you can’t afford to lose."
+    "GM 👋 Welcome to **Solana Made Simple AI**.\n\nI’m your guide to the Solana ecosystem — from wallets and seed phrases to staking, DeFi, memecoins, RWAs, and how Solana actually works under the hood.\n\nNo hype. Just clarity. What do you want to learn?"
 };
 
 const SolanaAssistant = () => {
@@ -37,8 +26,8 @@ const SolanaAssistant = () => {
   const quickPrompts = [
     { icon: Wallet, text: 'How do wallets work?' },
     { icon: Shield, text: 'What is a seed phrase?' },
-    { icon: TrendingUp, text: 'What is DeFi and staking?' },
-    { icon: Coins, text: 'Are Solana memecoins risky?' }
+    { icon: TrendingUp, text: 'Explain DeFi and staking' },
+    { icon: Coins, text: 'How do Solana memecoins work?' }
   ];
 
   useEffect(() => {
@@ -51,30 +40,48 @@ const SolanaAssistant = () => {
     setLoading(false);
   };
 
-  const getDemoResponse = (text) => {
-    const lower = text.toLowerCase();
-    if (lower.includes('wallet')) return DEMO_RESPONSES.wallet;
-    if (lower.includes('seed')) return DEMO_RESPONSES.seed;
-    if (lower.includes('defi') || lower.includes('stake')) return DEMO_RESPONSES.defi;
-    if (lower.includes('meme')) return DEMO_RESPONSES.memecoins;
-
-    return "That’s a great topic — this demo version is still loading knowledge modules.\n\nMore responses and live AI are coming soon 👀";
-  };
-
   const handleSubmit = async (promptText = null) => {
     const userMessage = promptText || input.trim();
     if (!userMessage || loading) return;
 
-    const updatedMessages = [...messages, { role: 'user', content: userMessage }];
+    const updatedMessages = [
+      ...messages,
+      { role: 'user', content: userMessage }
+    ];
+
     setMessages(updatedMessages);
     setInput('');
     setLoading(true);
 
-    setTimeout(() => {
-      const reply = getDemoResponse(userMessage);
-      setMessages([...updatedMessages, { role: 'assistant', content: reply }]);
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: updatedMessages })
+      });
+
+      if (!res.ok) {
+        throw new Error('AI request failed');
+      }
+
+      const data = await res.json();
+
+      setMessages([
+        ...updatedMessages,
+        { role: 'assistant', content: data.content }
+      ]);
+    } catch (err) {
+      setMessages([
+        ...updatedMessages,
+        {
+          role: 'assistant',
+          content:
+            "⚠️ I’m having trouble connecting right now. Please try again in a moment."
+        }
+      ]);
+    } finally {
       setLoading(false);
-    }, 600);
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -94,8 +101,12 @@ const SolanaAssistant = () => {
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Solana Made Simple</h1>
-              <p className="text-sm text-purple-300">SMS AI · Demo Mode</p>
+              <h1 className="text-xl font-bold text-white">
+                Solana Made Simple
+              </h1>
+              <p className="text-sm text-purple-300">
+                Education First · AI Powered
+              </p>
             </div>
           </div>
 
@@ -113,34 +124,59 @@ const SolanaAssistant = () => {
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-4xl mx-auto space-y-6">
           {messages.map((msg, idx) => (
-            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-2xl px-5 py-3 rounded-2xl ${
-                msg.role === 'user'
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-                  : 'bg-white/10 border border-white/20 text-white'
-              }`}>
-                <p className="whitespace-pre-wrap">{msg.content}</p>
+            <div
+              key={idx}
+              className={`flex ${
+                msg.role === 'user' ? 'justify-end' : 'justify-start'
+              }`}
+            >
+              {msg.role === 'assistant' && (
+                <div className="w-8 h-8 mr-3 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-white" />
+                </div>
+              )}
+              <div
+                className={`max-w-2xl px-5 py-3 rounded-2xl ${
+                  msg.role === 'user'
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                    : 'bg-white/10 border border-white/20 text-white'
+                }`}
+              >
+                <p className="whitespace-pre-wrap leading-relaxed">
+                  {msg.content}
+                </p>
               </div>
             </div>
           ))}
-          {loading && <Loader2 className="w-5 h-5 text-purple-300 animate-spin" />}
+
+          {loading && (
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-5 h-5 text-purple-300 animate-spin" />
+              <span className="text-purple-300 text-sm">
+                Thinking…
+              </span>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Quick prompts */}
+      {/* Quick Prompts */}
       {messages.length === 1 && (
-        <div className="px-4 pb-4 max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {quickPrompts.map((p, i) => (
-            <button
-              key={i}
-              onClick={() => handleSubmit(p.text)}
-              className="flex items-center gap-3 p-4 rounded-xl bg-purple-700 text-white hover:bg-purple-600"
-            >
-              <p.icon className="w-5 h-5" />
-              {p.text}
-            </button>
-          ))}
+        <div className="px-4 pb-4">
+          <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {quickPrompts.map((p, i) => (
+              <button
+                key={i}
+                onClick={() => handleSubmit(p.text)}
+                className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-purple-700 to-pink-700 text-white hover:scale-105 transition"
+              >
+                <p.icon className="w-5 h-5" />
+                {p.text}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -151,14 +187,20 @@ const SolanaAssistant = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Ask about Solana…"
-            className="flex-1 rounded-xl px-5 py-3 bg-white/10 text-white"
+            placeholder="Ask anything about Solana…"
+            disabled={loading}
+            className="flex-1 rounded-xl px-5 py-3 bg-white/10 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
           <button
             onClick={() => handleSubmit()}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-3 rounded-xl text-white"
+            disabled={loading || !input.trim()}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-3 rounded-xl text-white disabled:opacity-50"
           >
-            <Send className="w-5 h-5" />
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
           </button>
         </div>
       </div>
