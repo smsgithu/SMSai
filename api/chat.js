@@ -6,9 +6,20 @@ export default async function handler(req, res) {
   try {
     const { messages } = req.body;
 
-    if (!messages || !Array.isArray(messages)) {
+    if (!Array.isArray(messages)) {
       return res.status(400).json({ error: "Invalid messages format" });
     }
+
+    // 🔑 Convert OpenAI-style messages → Anthropic blocks
+    const anthropicMessages = messages.map(m => ({
+      role: m.role === "assistant" ? "assistant" : "user",
+      content: [
+        {
+          type: "text",
+          text: m.content
+        }
+      ]
+    }));
 
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -20,7 +31,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: "claude-3-5-sonnet-20241022",
         max_tokens: 600,
-        messages
+        messages: anthropicMessages
       })
     });
 
@@ -33,10 +44,10 @@ export default async function handler(req, res) {
       });
     }
 
-    res.status(200).json(data);
+    return res.status(200).json(data);
 
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       error: "Internal server error",
       details: err.message
     });
