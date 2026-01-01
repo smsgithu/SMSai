@@ -7,101 +7,74 @@ import {
   Coins,
   TrendingUp,
   Shield,
-  Sparkles
+  Sparkles,
+  Home
 } from 'lucide-react';
 
-const SolanaAssistant = () => {
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content:
-        "Hey! Welcome to Solana Made Simple. I'm your AI guide to everything Solana. Whether you're just getting started with wallets and seed phrases, curious about DeFi and staking, or want to understand the memecoin phenomenon and RWAs, I'm here to help. What would you like to learn about today?"
-    }
-  ]);
+const WELCOME_MESSAGE = {
+  role: 'assistant',
+  content:
+    "GM 👋 Welcome to Solana Made Simple.\n\nThis is a demo version of the SMS AI — an educational guide built to help you understand Solana from zero to power user.\n\nAsk about wallets, seed phrases, staking, DeFi, memecoins, RWAs, or how the Solana ecosystem actually works.\n\nNo hype. Just clarity. What do you want to learn?"
+};
 
+const DEMO_RESPONSES = {
+  wallet:
+    "A Solana wallet is your on-chain identity. It lets you hold SOL and tokens, interact with apps, and sign transactions. Popular wallets include Phantom and Solflare.\n\nYour wallet has a public address (safe to share) and a seed phrase (never share).",
+  seed:
+    "A seed phrase is a 12 or 24 word master key to your wallet. Anyone with it can access your funds.\n\nWrite it down offline. Never screenshot it. Never paste it into a website. No legit app will ever ask for it.",
+  defi:
+    "DeFi stands for Decentralized Finance. On Solana, this includes staking, lending, trading, and yield strategies — all powered by smart contracts instead of banks.\n\nStaking SOL helps secure the network and earns rewards.",
+  memecoins:
+    "Memecoins on Solana are fast-moving, high-risk culture assets. Some are experiments, some are jokes, some build real communities.\n\nMost fail. Never risk money you can’t afford to lose."
+};
+
+const SolanaAssistant = () => {
+  const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
   const quickPrompts = [
-    {
-      icon: Wallet,
-      text: 'How do I create a Solana wallet?',
-      color: 'from-purple-500 to-pink-500'
-    },
-    {
-      icon: Shield,
-      text: 'What are seed phrases?',
-      color: 'from-blue-500 to-cyan-500'
-    },
-    {
-      icon: TrendingUp,
-      text: 'Explain DeFi and staking',
-      color: 'from-green-500 to-emerald-500'
-    },
-    {
-      icon: Coins,
-      text: 'Tell me about Solana memecoins',
-      color: 'from-orange-500 to-red-500'
-    }
+    { icon: Wallet, text: 'How do wallets work?' },
+    { icon: Shield, text: 'What is a seed phrase?' },
+    { icon: TrendingUp, text: 'What is DeFi and staking?' },
+    { icon: Coins, text: 'Are Solana memecoins risky?' }
   ];
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // 🔑 THIS IS THE IMPORTANT FIX
+  const resetChat = () => {
+    setMessages([WELCOME_MESSAGE]);
+    setInput('');
+    setLoading(false);
+  };
+
+  const getDemoResponse = (text) => {
+    const lower = text.toLowerCase();
+    if (lower.includes('wallet')) return DEMO_RESPONSES.wallet;
+    if (lower.includes('seed')) return DEMO_RESPONSES.seed;
+    if (lower.includes('defi') || lower.includes('stake')) return DEMO_RESPONSES.defi;
+    if (lower.includes('meme')) return DEMO_RESPONSES.memecoins;
+
+    return "That’s a great topic — this demo version is still loading knowledge modules.\n\nMore responses and live AI are coming soon 👀";
+  };
+
   const handleSubmit = async (promptText = null) => {
     const userMessage = promptText || input.trim();
     if (!userMessage || loading) return;
 
-    const newMessages = [...messages, { role: 'user', content: userMessage }];
-    setMessages(newMessages);
+    const updatedMessages = [...messages, { role: 'user', content: userMessage }];
+    setMessages(updatedMessages);
     setInput('');
     setLoading(true);
 
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          messages: newMessages
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'API error');
-      }
-
-      const assistantText =
-        data.content?.[0]?.text ||
-        data.reply ||
-        'No response returned.';
-
-      setMessages([
-        ...newMessages,
-        { role: 'assistant', content: assistantText }
-      ]);
-    } catch (error) {
-      setMessages([
-        ...newMessages,
-        {
-          role: 'assistant',
-          content:
-            "I'm having trouble connecting right now. Please try again in a moment."
-        }
-      ]);
-    } finally {
+    setTimeout(() => {
+      const reply = getDemoResponse(userMessage);
+      setMessages([...updatedMessages, { role: 'assistant', content: reply }]);
       setLoading(false);
-    }
+    }, 600);
   };
 
   const handleKeyPress = (e) => {
@@ -115,18 +88,24 @@ const SolanaAssistant = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
       {/* Header */}
       <div className="bg-black/40 backdrop-blur-lg border-b border-purple-500/30 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-white" />
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white">Solana Made Simple</h1>
+              <p className="text-sm text-purple-300">SMS AI · Demo Mode</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">
-              Solana Made Simple
-            </h1>
-            <p className="text-sm text-purple-300">
-              Your AI Guide to the Solana Ecosystem
-            </p>
-          </div>
+
+          <button
+            onClick={resetChat}
+            className="flex items-center gap-2 text-purple-300 hover:text-white transition"
+          >
+            <Home className="w-5 h-5" />
+            <span className="text-sm">Home</span>
+          </button>
         </div>
       </div>
 
@@ -134,94 +113,53 @@ const SolanaAssistant = () => {
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-4xl mx-auto space-y-6">
           {messages.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`flex gap-3 ${
-                msg.role === 'user' ? 'justify-end' : 'justify-start'
-              }`}
-            >
-              {msg.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-                  <BookOpen className="w-5 h-5 text-white" />
-                </div>
-              )}
-              <div
-                className={`max-w-2xl rounded-2xl px-5 py-3 ${
-                  msg.role === 'user'
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-                    : 'bg-white/10 backdrop-blur-lg text-white border border-white/20'
-                }`}
-              >
-                <p className="whitespace-pre-wrap leading-relaxed">
-                  {msg.content}
-                </p>
+            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-2xl px-5 py-3 rounded-2xl ${
+                msg.role === 'user'
+                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                  : 'bg-white/10 border border-white/20 text-white'
+              }`}>
+                <p className="whitespace-pre-wrap">{msg.content}</p>
               </div>
             </div>
           ))}
-
-          {loading && (
-            <div className="flex gap-3 justify-start">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <div className="bg-white/10 backdrop-blur-lg rounded-2xl px-5 py-3 border border-white/20">
-                <Loader2 className="w-5 h-5 text-purple-300 animate-spin" />
-              </div>
-            </div>
-          )}
-
+          {loading && <Loader2 className="w-5 h-5 text-purple-300 animate-spin" />}
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Quick Prompts */}
+      {/* Quick prompts */}
       {messages.length === 1 && (
-        <div className="px-4 pb-4">
-          <div className="max-w-4xl mx-auto">
-            <p className="text-purple-300 text-sm mb-3 text-center">
-              Quick start topics:
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {quickPrompts.map((prompt, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSubmit(prompt.text)}
-                  className={`flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r ${prompt.color} hover:scale-105 transition-transform duration-200 text-white font-medium shadow-lg`}
-                >
-                  <prompt.icon className="w-5 h-5" />
-                  <span className="text-sm">{prompt.text}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+        <div className="px-4 pb-4 max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {quickPrompts.map((p, i) => (
+            <button
+              key={i}
+              onClick={() => handleSubmit(p.text)}
+              className="flex items-center gap-3 p-4 rounded-xl bg-purple-700 text-white hover:bg-purple-600"
+            >
+              <p.icon className="w-5 h-5" />
+              {p.text}
+            </button>
+          ))}
         </div>
       )}
 
       {/* Input */}
-      <div className="bg-black/40 backdrop-blur-lg border-t border-purple-500/30 px-4 py-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex gap-3">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Ask anything about Solana..."
-              disabled={loading}
-              className="flex-1 bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl px-5 py-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
-            />
-            <button
-              onClick={() => handleSubmit()}
-              disabled={loading || !input.trim()}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-6 py-3 font-medium hover:from-purple-500 hover:to-pink-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Send className="w-5 h-5" />
-              )}
-            </button>
-          </div>
+      <div className="bg-black/40 border-t border-purple-500/30 px-4 py-4">
+        <div className="max-w-4xl mx-auto flex gap-3">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Ask about Solana…"
+            className="flex-1 rounded-xl px-5 py-3 bg-white/10 text-white"
+          />
+          <button
+            onClick={() => handleSubmit()}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-3 rounded-xl text-white"
+          >
+            <Send className="w-5 h-5" />
+          </button>
         </div>
       </div>
     </div>
