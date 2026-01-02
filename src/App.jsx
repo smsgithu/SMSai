@@ -138,7 +138,7 @@ const SolanaAssistant = () => {
             {socialLinks.map((link, idx) => (
               
                 key={idx}
-                <a href={link.url}
+                href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-purple-300 hover:text-white transition-all hover:scale-110"
