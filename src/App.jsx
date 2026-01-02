@@ -135,8 +135,7 @@ const SolanaAssistant = () => {
           <div className="flex items-center gap-3 flex-wrap justify-center">
             <span className="text-purple-300 text-xs font-semibold">Socials:</span>
             {socialLinks.map((link, idx) => (
-              
-                key={idx}
+                <A key={idx}
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
