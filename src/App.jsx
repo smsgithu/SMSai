@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, BookOpen, Wallet, Coins, TrendingUp, Shield, Sparkles, Home, Youtube, Instagram, Linkedin, Calendar, Video } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 const SolanaAssistant = () => {
   const [messages, setMessages] = useState([
@@ -135,8 +136,9 @@ const SolanaAssistant = () => {
           <div className="flex items-center gap-3 flex-wrap justify-center">
             <span className="text-purple-300 text-xs font-semibold">Socials:</span>
             {socialLinks.map((link, idx) => (
-                <a key={idx}
-                href={link.url}
+              
+                key={idx}
+                <a href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-purple-300 hover:text-white transition-all hover:scale-110"
@@ -187,7 +189,9 @@ const SolanaAssistant = () => {
                     : 'bg-white/10 backdrop-blur-lg text-white border border-white/20'
                 }`}
               >
-                <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                <ReactMarkdown className="prose prose-invert prose-sm max-w-none leading-relaxed">
+                  {msg.content}
+                </ReactMarkdown>
               </div>
             </div>
           ))}
