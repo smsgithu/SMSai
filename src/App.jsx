@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, BookOpen, Wallet, Coins, TrendingUp, Shield, Sparkles, Home, Youtube, Instagram, Linkedin, Calendar } from 'lucide-react';
+import { Send, Loader2, BookOpen, Wallet, Coins, TrendingUp, Shield, Sparkles, Home, Youtube, Instagram, Linkedin, Calendar, Video } from 'lucide-react';
 
 const SolanaAssistant = () => {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "👋 🌟 Welcome to SMSai\n\nYour guide to the Solana ecosystem — from wallets and seed phrases to staking, DeFi, memecoins, RWAs, and how Solana actually works under the hood.\n\nType: Just ask me anything about Solana!"
+      content: "👋 🌟 Welcome to SMSai\n\nYour AI guide to the Solana ecosystem. We break things down simply—from wallets and seed phrases to staking, DeFi, RWAs, memecoins, and how Solana actually works under the hood.\n\nAsk me anything about Solana."
     }
   ]);
   const [input, setInput] = useState('');
@@ -25,7 +25,7 @@ const SolanaAssistant = () => {
     { name: '@smsonx', url: 'https://x.com/smsonx', label: '@smsonx', icon: '𝕏' },
     { name: '@solmadesimple', url: 'https://x.com/solmadesimple', label: '@solmadesimple', icon: '𝕏' },
     { name: 'YouTube', url: 'https://www.youtube.com/@SMSONYOUTUBE', Icon: Youtube },
-    { name: 'TikTok', url: 'https://www.tiktok.com/@solanamadesimple', Icon: TrendingUp },
+    { name: 'TikTok', url: 'https://www.tiktok.com/@solanamadesimple', Icon: Video, label: 'TikTok' },
     { name: 'Instagram', url: 'https://www.instagram.com/smscrypto', Icon: Instagram },
     { name: 'LinkedIn', url: 'https://www.linkedin.com/in/sean-suvie-77a35018b/', Icon: Linkedin },
     { name: 'Book a Call', url: 'https://calendly.com/seanmsuvie/30min', Icon: Calendar, label: 'Book a Call' }
@@ -103,7 +103,7 @@ const SolanaAssistant = () => {
     setMessages([
       {
         role: 'assistant',
-        content: "👋 🌟 Welcome to SMSai\n\nYour guide to the Solana ecosystem — from wallets and seed phrases to staking, DeFi, memecoins, RWAs, and how Solana actually works under the hood.\n\nType: Just ask me anything about Solana!"
+        content: "👋 🌟 Welcome to SMSai\n\nYour AI guide to the Solana ecosystem. We break things down simply—from wallets and seed phrases to staking, DeFi, RWAs, memecoins, and how Solana actually works under the hood.\n\nAsk me anything about Solana."
       }
     ]);
   };
@@ -135,7 +135,8 @@ const SolanaAssistant = () => {
           <div className="flex items-center gap-3 flex-wrap justify-center">
             <span className="text-purple-300 text-xs font-semibold">Socials:</span>
             {socialLinks.map((link, idx) => (
-                <a key={idx}
+              
+                key={idx}
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
