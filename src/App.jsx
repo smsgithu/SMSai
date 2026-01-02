@@ -41,7 +41,6 @@ const SolanaAssistant = () => {
     { name: 'Book a Call', url: 'https://calendly.com/seanmsuvie/30min', Icon: Calendar, color: 'hover:text-green-400 hover:scale-110' }
   ];
 
-  // Fetch crypto prices
   useEffect(() => {
     const fetchPrices = async () => {
       try {
@@ -121,10 +120,8 @@ const SolanaAssistant = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
-      {/* Price Ticker & Social Links */}
       <div className="bg-black/60 backdrop-blur-md border-b border-purple-500/20 px-4 py-2.5">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          {/* Crypto Prices */}
           <div className="flex items-center gap-4 sm:gap-6">
             {solPrice && (
               <div className="flex items-center gap-2">
@@ -145,8 +142,6 @@ const SolanaAssistant = () => {
               </div>
             )}
           </div>
-
-          {/* Social Links */}
           <div className="flex items-center gap-3 sm:gap-4">
             {socialLinks.map((link, idx) => (
               
@@ -174,7 +169,6 @@ const SolanaAssistant = () => {
         </div>
       </div>
 
-      {/* Header */}
       <div className="bg-black/40 backdrop-blur-lg border-b border-purple-500/30 px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
@@ -187,7 +181,6 @@ const SolanaAssistant = () => {
         </div>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-4xl mx-auto space-y-6">
           {messages.map((msg, idx) => (
@@ -226,7 +219,6 @@ const SolanaAssistant = () => {
         </div>
       </div>
 
-      {/* Quick Prompts */}
       {messages.length === 1 && (
         <div className="px-4 pb-4">
           <div className="max-w-4xl mx-auto">
@@ -247,7 +239,6 @@ const SolanaAssistant = () => {
         </div>
       )}
 
-      {/* Input */}
       <div className="bg-black/40 backdrop-blur-lg border-t border-purple-500/30 px-4 py-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex gap-3">
