@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, BookOpen, Wallet, Coins, TrendingUp, Shield, Sparkles, Home } from 'lucide-react';
+import { Send, Loader2, BookOpen, Wallet, Coins, TrendingUp, Shield, Sparkles, Home, Youtube, Instagram, Linkedin, Calendar } from 'lucide-react';
 
 const SolanaAssistant = () => {
   const [messages, setMessages] = useState([
@@ -19,6 +19,26 @@ const SolanaAssistant = () => {
     { icon: Shield, text: 'What is a seed phrase?' },
     { icon: TrendingUp, text: 'Explain DeFi and staking' },
     { icon: Coins, text: 'How do Solana memecoins work?' }
+  ];
+
+  const socialLinks = [
+    { 
+      name: 'X - Personal', 
+      url: 'https://x.com/smsonx', 
+      pfp: 'https://pbs.twimg.com/profile_images/1880410614831857664/wCYDZ0bA_400x400.jpg',
+      color: 'hover:scale-110 hover:ring-2 hover:ring-purple-400' 
+    },
+    { 
+      name: 'X - SMS', 
+      url: 'https://x.com/solmadesimple', 
+      pfp: 'https://pbs.twimg.com/profile_images/1880345748089978880/U4d9UXWV_400x400.jpg',
+      color: 'hover:scale-110 hover:ring-2 hover:ring-pink-400' 
+    },
+    { name: 'YouTube', url: 'https://www.youtube.com/@SMSONYOUTUBE', Icon: Youtube, color: 'hover:text-red-500 hover:scale-110' },
+    { name: 'TikTok', url: 'https://www.tiktok.com/@solanamadesimple', icon: '🎵', color: 'hover:scale-110' },
+    { name: 'Instagram', url: 'https://www.instagram.com/smscrypto', Icon: Instagram, color: 'hover:text-pink-500 hover:scale-110' },
+    { name: 'LinkedIn', url: 'https://www.linkedin.com/in/sean-suvie-77a35018b/', Icon: Linkedin, color: 'hover:text-blue-500 hover:scale-110' },
+    { name: 'Book a Call', url: 'https://calendly.com/seanmsuvie/30min', Icon: Calendar, color: 'hover:text-green-400 hover:scale-110' }
   ];
 
   // Fetch crypto prices
@@ -41,7 +61,7 @@ const SolanaAssistant = () => {
     };
 
     fetchPrices();
-    const interval = setInterval(fetchPrices, 60000); // Update every minute
+    const interval = setInterval(fetchPrices, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -102,13 +122,14 @@ const SolanaAssistant = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
       {/* Price Ticker & Social Links */}
-      <div className="bg-black/60 backdrop-blur-md border-b border-purple-500/20 px-4 py-2">
-        <div className="max-w-6xl mx-auto flex items-center justify-between text-sm">
-          <div className="flex items-center gap-6">
+      <div className="bg-black/60 backdrop-blur-md border-b border-purple-500/20 px-4 py-2.5">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Crypto Prices */}
+          <div className="flex items-center gap-4 sm:gap-6">
             {solPrice && (
               <div className="flex items-center gap-2">
-                <span className="text-purple-300 font-semibold">SOL</span>
-                <span className="text-white font-bold">${solPrice.price.toFixed(2)}</span>
+                <span className="text-purple-300 font-semibold text-xs sm:text-sm">SOL</span>
+                <span className="text-white font-bold text-xs sm:text-sm">${solPrice.price.toFixed(2)}</span>
                 <span className={`text-xs ${solPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {solPrice.change >= 0 ? '↑' : '↓'} {Math.abs(solPrice.change).toFixed(2)}%
                 </span>
@@ -116,31 +137,39 @@ const SolanaAssistant = () => {
             )}
             {btcPrice && (
               <div className="flex items-center gap-2">
-                <span className="text-orange-300 font-semibold">BTC</span>
-                <span className="text-white font-bold">${btcPrice.price.toLocaleString()}</span>
+                <span className="text-orange-300 font-semibold text-xs sm:text-sm">BTC</span>
+                <span className="text-white font-bold text-xs sm:text-sm">${btcPrice.price.toLocaleString()}</span>
                 <span className={`text-xs ${btcPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {btcPrice.change >= 0 ? '↑' : '↓'} {Math.abs(btcPrice.change).toFixed(2)}%
                 </span>
               </div>
             )}
           </div>
-          <div className="flex items-center gap-4">
-            <a 
-              href="https://x.com/smsonx" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-purple-300 hover:text-purple-100 transition-colors flex items-center gap-1"
-            >
-              <span className="text-xs">@smsonx</span>
-            </a>
-            <a 
-              href="https://x.com/solmadesimple" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-purple-300 hover:text-purple-100 transition-colors flex items-center gap-1"
-            >
-              <span className="text-xs">@solmadesimple</span>
-            </a>
+
+          {/* Social Links */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            {socialLinks.map((link, idx) => (
+              
+                key={idx}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`transition-all ${link.color}`}
+                title={link.name}
+              >
+                {link.pfp ? (
+                  <img 
+                    src={link.pfp} 
+                    alt={link.name}
+                    className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-2 ring-purple-500/30"
+                  />
+                ) : link.Icon ? (
+                  <link.Icon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-300" />
+                ) : (
+                  <span className="text-sm sm:text-base font-bold text-purple-300">{link.icon}</span>
+                )}
+              </a>
+            ))}
           </div>
         </div>
       </div>
@@ -197,7 +226,7 @@ const SolanaAssistant = () => {
         </div>
       </div>
 
-      {/* Quick Prompts - Only show if first message */}
+      {/* Quick Prompts */}
       {messages.length === 1 && (
         <div className="px-4 pb-4">
           <div className="max-w-4xl mx-auto">
@@ -240,6 +269,7 @@ const SolanaAssistant = () => {
               <button
                 onClick={resetChat}
                 className="bg-purple-600/50 hover:bg-purple-600 text-white rounded-xl px-4 py-3 font-medium transition-all flex items-center gap-2"
+                title="Return to home"
               >
                 <Home className="w-5 h-5" />
               </button>
