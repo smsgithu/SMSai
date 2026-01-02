@@ -22,23 +22,13 @@ const SolanaAssistant = () => {
   ];
 
   const socialLinks = [
-    { 
-      name: 'X - Personal', 
-      url: 'https://x.com/smsonx', 
-      pfp: 'https://pbs.twimg.com/profile_images/1880410614831857664/wCYDZ0bA_400x400.jpg',
-      color: 'hover:scale-110 hover:ring-2 hover:ring-purple-400' 
-    },
-    { 
-      name: 'X - SMS', 
-      url: 'https://x.com/solmadesimple', 
-      pfp: 'https://pbs.twimg.com/profile_images/1880345748089978880/U4d9UXWV_400x400.jpg',
-      color: 'hover:scale-110 hover:ring-2 hover:ring-pink-400' 
-    },
-    { name: 'YouTube', url: 'https://www.youtube.com/@SMSONYOUTUBE', Icon: Youtube, color: 'hover:text-red-500 hover:scale-110' },
-    { name: 'TikTok', url: 'https://www.tiktok.com/@solanamadesimple', icon: '🎵', color: 'hover:scale-110' },
-    { name: 'Instagram', url: 'https://www.instagram.com/smscrypto', Icon: Instagram, color: 'hover:text-pink-500 hover:scale-110' },
-    { name: 'LinkedIn', url: 'https://www.linkedin.com/in/sean-suvie-77a35018b/', Icon: Linkedin, color: 'hover:text-blue-500 hover:scale-110' },
-    { name: 'Book a Call', url: 'https://calendly.com/seanmsuvie/30min', Icon: Calendar, color: 'hover:text-green-400 hover:scale-110' }
+    { name: '@smsonx', url: 'https://x.com/smsonx', label: '@smsonx', icon: '𝕏' },
+    { name: '@solmadesimple', url: 'https://x.com/solmadesimple', label: '@solmadesimple', icon: '𝕏' },
+    { name: 'YouTube', url: 'https://www.youtube.com/@SMSONYOUTUBE', Icon: Youtube },
+    { name: 'TikTok', url: 'https://www.tiktok.com/@solanamadesimple', Icon: TrendingUp },
+    { name: 'Instagram', url: 'https://www.instagram.com/smscrypto', Icon: Instagram },
+    { name: 'LinkedIn', url: 'https://www.linkedin.com/in/sean-suvie-77a35018b/', Icon: Linkedin },
+    { name: 'Book a Call', url: 'https://calendly.com/seanmsuvie/30min', Icon: Calendar, label: 'Book a Call' }
   ];
 
   useEffect(() => {
@@ -142,26 +132,24 @@ const SolanaAssistant = () => {
               </div>
             )}
           </div>
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-3 flex-wrap justify-center">
+            <span className="text-purple-300 text-xs font-semibold">Socials:</span>
             {socialLinks.map((link, idx) => (
               
-              <a key={idx}
+                key={idx}
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`transition-all ${link.color}`}
+                className="flex items-center gap-1.5 text-purple-300 hover:text-white transition-all hover:scale-110"
                 title={link.name}
               >
-                {link.pfp ? (
-                  <img 
-                    src={link.pfp} 
-                    alt={link.name}
-                    className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-2 ring-purple-500/30"
-                  />
-                ) : link.Icon ? (
-                  <link.Icon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-300" />
-                ) : (
-                  <span className="text-sm sm:text-base font-bold text-purple-300">{link.icon}</span>
+                {link.Icon ? (
+                  <link.Icon className="w-4 h-4" />
+                ) : link.icon ? (
+                  <span className="text-sm font-bold">{link.icon}</span>
+                ) : null}
+                {link.label && (
+                  <span className="text-xs font-medium">{link.label}</span>
                 )}
               </a>
             ))}
