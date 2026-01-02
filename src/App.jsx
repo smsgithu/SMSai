@@ -5,7 +5,7 @@ const SolanaAssistant = () => {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "👋 🌟 Welcome to **Solana Made Simple AI**—\n\nYour guide to the Solana ecosystem — from wallets and seed phrases to staking, DeFi, memecoins, RWAs, and how Solana actually works under the hood.\n\nType: Just ask me anything about Solana!"
+      content: "👋 🌟 Welcome to SMSai\n\nYour guide to the Solana ecosystem — from wallets and seed phrases to staking, DeFi, memecoins, RWAs, and how Solana actually works under the hood.\n\nType: Just ask me anything about Solana!"
     }
   ]);
   const [input, setInput] = useState('');
