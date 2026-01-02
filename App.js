@@ -1,26 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
-  Send,
-  Loader2,
-  BookOpen,
-  Wallet,
-  Coins,
-  TrendingUp,
-  Shield,
-  Sparkles,
-  Home
-} from 'lucide-react';
-
-const WELCOME_MESSAGE = {
-  role: 'assistant',
-  content:
-    "GM 👋 Welcome to **Solana Made Simple AI**.\n\nI’m your guide to the Solana ecosystem — from wallets and seed phrases to staking, DeFi, memecoins, RWAs, and how Solana actually works under the hood.\n\nNo hype. Just clarity. What do you want to learn?"
-};
+import { Send, Loader2, BookOpen, Wallet, Coins, TrendingUp, Shield, Sparkles, Home } from 'lucide-react';
 
 const SolanaAssistant = () => {
-  const [messages, setMessages] = useState([WELCOME_MESSAGE]);
+  const [messages, setMessages] = useState([
+    {
+      role: 'assistant',
+      content: "👋 🌟 Welcome to SMSai\n\nYour guide to the Solana ecosystem — from wallets and seed phrases to staking, DeFi, memecoins, RWAs, and how Solana actually works under the hood.\n\nType: Just ask me anything about Solana!"
+    }
+  ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [solPrice, setSolPrice] = useState(null);
+  const [btcPrice, setBtcPrice] = useState(null);
   const messagesEndRef = useRef(null);
 
   const quickPrompts = [
@@ -30,93 +21,140 @@ const SolanaAssistant = () => {
     { icon: Coins, text: 'How do Solana memecoins work?' }
   ];
 
+  // Fetch crypto prices
+  useEffect(() => {
+    const fetchPrices = async () => {
+      try {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana,bitcoin&vs_currencies=usd&include_24hr_change=true');
+        const data = await response.json();
+        setSolPrice({
+          price: data.solana.usd,
+          change: data.solana.usd_24h_change
+        });
+        setBtcPrice({
+          price: data.bitcoin.usd,
+          change: data.bitcoin.usd_24h_change
+        });
+      } catch (error) {
+        console.error('Failed to fetch prices:', error);
+      }
+    };
+
+    fetchPrices();
+    const interval = setInterval(fetchPrices, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const resetChat = () => {
-    setMessages([WELCOME_MESSAGE]);
-    setInput('');
-    setLoading(false);
-  };
-
   const handleSubmit = async (promptText = null) => {
     const userMessage = promptText || input.trim();
+    
     if (!userMessage || loading) return;
 
-    const updatedMessages = [
-      ...messages,
-      { role: 'user', content: userMessage }
-    ];
-
-    setMessages(updatedMessages);
+    const newMessages = [...messages, { role: 'user', content: userMessage }];
+    setMessages(newMessages);
     setInput('');
     setLoading(true);
 
     try {
-      const res = await fetch('/api/chat', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: updatedMessages })
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: newMessages
+        })
       });
 
-      if (!res.ok) {
-        throw new Error('AI request failed');
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
       }
 
-      const data = await res.json();
-
-      setMessages([
-        ...updatedMessages,
-        { role: 'assistant', content: data.content }
-      ]);
-    } catch (err) {
-      setMessages([
-        ...updatedMessages,
-        {
-          role: 'assistant',
-          content:
-            "⚠️ I’m having trouble connecting right now. Please try again in a moment."
-        }
-      ]);
+      setMessages([...newMessages, { 
+        role: 'assistant', 
+        content: data.content 
+      }]);
+    } catch (error) {
+      setMessages([...newMessages, { 
+        role: 'assistant', 
+        content: "I apologize, but I'm having trouble connecting right now. Please try again in a moment." 
+      }]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
+  const resetChat = () => {
+    setMessages([
+      {
+        role: 'assistant',
+        content: "👋 🌟 Welcome to SMSai\n\nYour guide to the Solana ecosystem — from wallets and seed phrases to staking, DeFi, memecoins, RWAs, and how Solana actually works under the hood.\n\nType: Just ask me anything about Solana!"
+      }
+    ]);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
+      {/* Price Ticker & Social Links */}
+      <div className="bg-black/60 backdrop-blur-md border-b border-purple-500/20 px-4 py-2">
+        <div className="max-w-6xl mx-auto flex items-center justify-between text-sm">
+          <div className="flex items-center gap-6">
+            {solPrice && (
+              <div className="flex items-center gap-2">
+                <span className="text-purple-300 font-semibold">SOL</span>
+                <span className="text-white font-bold">${solPrice.price.toFixed(2)}</span>
+                <span className={`text-xs ${solPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {solPrice.change >= 0 ? '↑' : '↓'} {Math.abs(solPrice.change).toFixed(2)}%
+                </span>
+              </div>
+            )}
+            {btcPrice && (
+              <div className="flex items-center gap-2">
+                <span className="text-orange-300 font-semibold">BTC</span>
+                <span className="text-white font-bold">${btcPrice.price.toLocaleString()}</span>
+                <span className={`text-xs ${btcPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {btcPrice.change >= 0 ? '↑' : '↓'} {Math.abs(btcPrice.change).toFixed(2)}%
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-4">
+            <a 
+              href="https://x.com/smsonx" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-purple-300 hover:text-purple-100 transition-colors flex items-center gap-1"
+            >
+              <span className="text-xs">@smsonx</span>
+            </a>
+            <a 
+              href="https://x.com/solmadesimple" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-purple-300 hover:text-purple-100 transition-colors flex items-center gap-1"
+            >
+              <span className="text-xs">@solmadesimple</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="bg-black/40 backdrop-blur-lg border-b border-purple-500/30 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">
-                Solana Made Simple
-              </h1>
-              <p className="text-sm text-purple-300">
-                Education First · AI Powered
-              </p>
-            </div>
+        <div className="max-w-4xl mx-auto flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <Sparkles className="w-6 h-6 text-white" />
           </div>
-
-          <button
-            onClick={resetChat}
-            className="flex items-center gap-2 text-purple-300 hover:text-white transition"
-          >
-            <Home className="w-5 h-5" />
-            <span className="text-sm">Home</span>
-          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Solana Made Simple</h1>
+            <p className="text-sm text-purple-300">Your AI Guide to the Solana Ecosystem</p>
+          </div>
         </div>
       </div>
 
@@ -126,82 +164,98 @@ const SolanaAssistant = () => {
           {messages.map((msg, idx) => (
             <div
               key={idx}
-              className={`flex ${
-                msg.role === 'user' ? 'justify-end' : 'justify-start'
-              }`}
+              className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {msg.role === 'assistant' && (
-                <div className="w-8 h-8 mr-3 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
                   <BookOpen className="w-5 h-5 text-white" />
                 </div>
               )}
               <div
-                className={`max-w-2xl px-5 py-3 rounded-2xl ${
+                className={`max-w-2xl rounded-2xl px-5 py-3 ${
                   msg.role === 'user'
                     ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-                    : 'bg-white/10 border border-white/20 text-white'
+                    : 'bg-white/10 backdrop-blur-lg text-white border border-white/20'
                 }`}
               >
-                <p className="whitespace-pre-wrap leading-relaxed">
-                  {msg.content}
-                </p>
+                <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
               </div>
             </div>
           ))}
-
+          
           {loading && (
-            <div className="flex items-center gap-3">
-              <Loader2 className="w-5 h-5 text-purple-300 animate-spin" />
-              <span className="text-purple-300 text-sm">
-                Thinking…
-              </span>
+            <div className="flex gap-3 justify-start">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <BookOpen className="w-5 h-5 text-white" />
+              </div>
+              <div className="bg-white/10 backdrop-blur-lg rounded-2xl px-5 py-3 border border-white/20">
+                <Loader2 className="w-5 h-5 text-purple-300 animate-spin" />
+              </div>
             </div>
           )}
-
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Quick Prompts */}
+      {/* Quick Prompts - Only show if first message */}
       {messages.length === 1 && (
         <div className="px-4 pb-4">
-          <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {quickPrompts.map((p, i) => (
-              <button
-                key={i}
-                onClick={() => handleSubmit(p.text)}
-                className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-purple-700 to-pink-700 text-white hover:scale-105 transition"
-              >
-                <p.icon className="w-5 h-5" />
-                {p.text}
-              </button>
-            ))}
+          <div className="max-w-4xl mx-auto">
+            <p className="text-purple-300 text-sm mb-3 text-center">Quick start topics:</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {quickPrompts.map((prompt, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSubmit(prompt.text)}
+                  className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-105 transition-transform duration-200 text-white font-medium shadow-lg"
+                >
+                  <prompt.icon className="w-5 h-5" />
+                  <span className="text-sm">{prompt.text}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
       {/* Input */}
-      <div className="bg-black/40 border-t border-purple-500/30 px-4 py-4">
-        <div className="max-w-4xl mx-auto flex gap-3">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Ask anything about Solana…"
-            disabled={loading}
-            className="flex-1 rounded-xl px-5 py-3 bg-white/10 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-          />
-          <button
-            onClick={() => handleSubmit()}
-            disabled={loading || !input.trim()}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-3 rounded-xl text-white disabled:opacity-50"
-          >
-            {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
+      <div className="bg-black/40 backdrop-blur-lg border-t border-purple-500/30 px-4 py-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit();
+                }
+              }}
+              placeholder="Ask anything about Solana..."
+              disabled={loading}
+              className="flex-1 bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl px-5 py-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+            />
+            {messages.length > 1 && (
+              <button
+                onClick={resetChat}
+                className="bg-purple-600/50 hover:bg-purple-600 text-white rounded-xl px-4 py-3 font-medium transition-all flex items-center gap-2"
+              >
+                <Home className="w-5 h-5" />
+              </button>
             )}
-          </button>
+            <button
+              onClick={() => handleSubmit()}
+              disabled={loading || !input.trim()}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-6 py-3 font-medium hover:from-purple-500 hover:to-pink-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>
