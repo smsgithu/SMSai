@@ -149,7 +149,8 @@ const SolanaAssistant = () => {
             <span className="text-purple-300 text-xs font-semibold">Socials:</span>
             {socialLinks.map((link, idx) => (
               
-                <a key={idx}
+                <a
+                key={idx}
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
