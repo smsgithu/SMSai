@@ -147,12 +147,6 @@ const SolanaAssistant = () => {
               
                 key={idx}
                 href={link.url}
-{/* Social Links */}
-          <div className="flex items-center gap-3 sm:gap-4">
-            {socialLinks.map((link, idx) => (
-              
-                key={idx}
-                href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`transition-all ${link.color}`}
@@ -171,6 +165,18 @@ const SolanaAssistant = () => {
                 )}
               </a>
             ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-black/40 backdrop-blur-lg border-b border-purple-500/30 px-6 py-4">
+        <div className="max-w-4xl mx-auto flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <Sparkles className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Solana Made Simple</h1>
+            <p className="text-sm text-purple-300">Your AI Guide to the Solana Ecosystem</p>
           </div>
         </div>
       </div>
