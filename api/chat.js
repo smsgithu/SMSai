@@ -15,7 +15,7 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-latest',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 800,
         system: `
 You are SMS AI, the educational assistant for Solana Made Simple.
