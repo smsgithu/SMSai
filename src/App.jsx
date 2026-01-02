@@ -74,4 +74,4 @@ const SolanaAssistant = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">Solana Made Simple</h1>
-            <p className="text-sm text-purple-300">Your AI Guide to the Solana Eco
+            <p className="text-sm text-purple-300">Your AI Guide to the Solana Ecosystem</p>
