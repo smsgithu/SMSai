@@ -6,7 +6,8 @@ const SolanaAssistant = () => {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "👋 🌟 Welcome to SMSai\n\nYour AI guide to the Solana ecosystem. We break things down simply—from wallets and seed phrases to staking, DeFi, RWAs, memecoins, and how Solana actually works under the hood.\n\nAsk me anything about Solana."
+      content: "👋 🌟 Welcome to SMSai\n\nYour AI guide to the Solana ecosystem. We break things down simply—from wallets and seed phrases to staking, DeFi, RWAs, memecoins, and how Solana actually works under the hood.\n\nAsk me anything about Solana.",
+      timestamp: new Date()
     }
   ]);
   const [input, setInput] = useState('');
@@ -31,6 +32,14 @@ const SolanaAssistant = () => {
     { name: 'LinkedIn', url: 'https://www.linkedin.com/in/sean-suvie-77a35018b/', Icon: Linkedin },
     { name: 'Book a Call', url: 'https://calendly.com/seanmsuvie/30min', Icon: Calendar, label: 'Book a Call' }
   ];
+
+  const formatTime = (date) => {
+    return new Date(date).toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  };
 
   useEffect(() => {
     const fetchPrices = async () => {
@@ -64,7 +73,7 @@ const SolanaAssistant = () => {
     
     if (!userMessage || loading) return;
 
-    const newMessages = [...messages, { role: 'user', content: userMessage }];
+    const newMessages = [...messages, { role: 'user', content: userMessage, timestamp: new Date() }];
     setMessages(newMessages);
     setInput('');
     setLoading(true);
@@ -76,7 +85,7 @@ const SolanaAssistant = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: newMessages
+          messages: newMessages.map(m => ({ role: m.role, content: m.content }))
         })
       });
 
@@ -88,12 +97,14 @@ const SolanaAssistant = () => {
 
       setMessages([...newMessages, { 
         role: 'assistant', 
-        content: data.content 
+        content: data.content,
+        timestamp: new Date()
       }]);
     } catch (error) {
       setMessages([...newMessages, { 
         role: 'assistant', 
-        content: "I apologize, but I'm having trouble connecting right now. Please try again in a moment." 
+        content: "I apologize, but I'm having trouble connecting right now. Please try again in a moment.",
+        timestamp: new Date()
       }]);
     } finally {
       setLoading(false);
@@ -104,7 +115,8 @@ const SolanaAssistant = () => {
     setMessages([
       {
         role: 'assistant',
-        content: "👋 🌟 Welcome to SMSai\n\nYour AI guide to the Solana ecosystem. We break things down simply—from wallets and seed phrases to staking, DeFi, RWAs, memecoins, and how Solana actually works under the hood.\n\nAsk me anything about Solana."
+        content: "👋 🌟 Welcome to SMSai\n\nYour AI guide to the Solana ecosystem. We break things down simply—from wallets and seed phrases to staking, DeFi, RWAs, memecoins, and how Solana actually works under the hood.\n\nAsk me anything about Solana.",
+        timestamp: new Date()
       }
     ]);
   };
@@ -137,7 +149,7 @@ const SolanaAssistant = () => {
             <span className="text-purple-300 text-xs font-semibold">Socials:</span>
             {socialLinks.map((link, idx) => (
               
-                <a key={idx}
+                key={idx}
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -171,37 +183,57 @@ const SolanaAssistant = () => {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-6">
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-3xl mx-auto space-y-4">
           {messages.map((msg, idx) => (
             <div
               key={idx}
-              className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
             >
-              {msg.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-                  <BookOpen className="w-5 h-5 text-white" />
+              <div className={`flex items-end gap-2 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                {msg.role === 'assistant' && (
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 mb-1">
+                    <BookOpen className="w-4 h-4 text-white" />
+                  </div>
+                )}
+                <div
+                  className={`rounded-2xl px-4 py-3 ${
+                    msg.role === 'user'
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-br-sm'
+                      : 'bg-white/10 backdrop-blur-lg text-white border border-white/20 rounded-bl-sm'
+                  }`}
+                >
+                  <div className="prose prose-invert prose-sm max-w-none">
+                    <ReactMarkdown
+                      components={{
+                        p: ({children}) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+                        h1: ({children}) => <h1 className="text-lg font-bold mb-2 mt-3 first:mt-0">{children}</h1>,
+                        h2: ({children}) => <h2 className="text-base font-bold mb-2 mt-3 first:mt-0">{children}</h2>,
+                        h3: ({children}) => <h3 className="text-sm font-bold mb-1 mt-2 first:mt-0">{children}</h3>,
+                        ul: ({children}) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                        ol: ({children}) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                        li: ({children}) => <li className="leading-relaxed">{children}</li>,
+                        strong: ({children}) => <strong className="font-semibold text-purple-200">{children}</strong>,
+                        em: ({children}) => <em className="italic text-purple-200">{children}</em>,
+                        code: ({children}) => <code className="bg-black/30 px-1.5 py-0.5 rounded text-xs">{children}</code>,
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
                 </div>
-              )}
-              <div
-                className={`max-w-2xl rounded-2xl px-5 py-3 ${
-                  msg.role === 'user'
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-                    : 'bg-white/10 backdrop-blur-lg text-white border border-white/20'
-                }`}
-              >
-                <ReactMarkdown className="prose prose-invert prose-sm max-w-none leading-relaxed">
-                  {msg.content}
-                </ReactMarkdown>
               </div>
+              <span className={`text-xs text-purple-300/60 mt-1 ${msg.role === 'user' ? 'mr-9' : 'ml-9'}`}>
+                {formatTime(msg.timestamp)}
+              </span>
             </div>
           ))}
           
           {loading && (
-            <div className="flex gap-3 justify-start">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
+            <div className="flex items-start gap-2">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+                <BookOpen className="w-4 h-4 text-white" />
               </div>
-              <div className="bg-white/10 backdrop-blur-lg rounded-2xl px-5 py-3 border border-white/20">
+              <div className="bg-white/10 backdrop-blur-lg rounded-2xl rounded-bl-sm px-4 py-3 border border-white/20">
                 <Loader2 className="w-5 h-5 text-purple-300 animate-spin" />
               </div>
             </div>
@@ -212,7 +244,7 @@ const SolanaAssistant = () => {
 
       {messages.length === 1 && (
         <div className="px-4 pb-4">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-3xl mx-auto">
             <p className="text-purple-300 text-sm mb-3 text-center">Quick start topics:</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {quickPrompts.map((prompt, idx) => (
@@ -231,7 +263,7 @@ const SolanaAssistant = () => {
       )}
 
       <div className="bg-black/40 backdrop-blur-lg border-t border-purple-500/30 px-4 py-4">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           <div className="flex gap-3">
             <input
               type="text"
