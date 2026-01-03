@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, BookOpen, Wallet, Coins, TrendingUp, Shield, Sparkles, Home, Youtube, Instagram, Linkedin, Calendar, Video } from 'lucide-react';
+import { Send, Loader2, BookOpen, Wallet, Coins, TrendingUp, Shield, Sparkles, Home, Youtube, Instagram, Linkedin, Calendar, Video, Eye } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 const SolanaAssistant = () => {
@@ -14,7 +14,9 @@ const SolanaAssistant = () => {
   const [loading, setLoading] = useState(false);
   const [solPrice, setSolPrice] = useState(null);
   const [btcPrice, setBtcPrice] = useState(null);
+  const [sessionCount, setSessionCount] = useState(0);
   const messagesEndRef = useRef(null);
+  const hasTrackedSession = useRef(false);
 
   const quickPrompts = [
     { icon: Wallet, text: 'How do wallets work?' },
@@ -41,6 +43,27 @@ const SolanaAssistant = () => {
     });
   };
 
+  // Track page views
+  useEffect(() => {
+    if (!hasTrackedSession.current) {
+      hasTrackedSession.current = true;
+      
+      // Increment session counter
+      const currentCount = parseInt(localStorage.getItem('smsai_sessions') || '0');
+      const newCount = currentCount + 1;
+      localStorage.setItem('smsai_sessions', newCount.toString());
+      setSessionCount(newCount);
+
+      // Optional: Send to analytics endpoint
+      fetch('/api/analytics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: 'session_start', timestamp: new Date() })
+      }).catch(() => {}); // Silent fail if analytics endpoint doesn't exist
+    }
+  }, []);
+
+  // Fetch crypto prices - Changed to 5 minutes (300000ms)
   useEffect(() => {
     const fetchPrices = async () => {
       try {
@@ -60,7 +83,7 @@ const SolanaAssistant = () => {
     };
 
     fetchPrices();
-    const interval = setInterval(fetchPrices, 60000);
+    const interval = setInterval(fetchPrices, 300000); // 5 minutes instead of 1 minute
     return () => clearInterval(interval);
   }, []);
 
@@ -79,28 +102,36 @@ const SolanaAssistant = () => {
     setLoading(true);
 
     try {
+      // Trim message history to last 10 messages to save costs
+      const recentMessages = newMessages.slice(-10);
+      
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: newMessages.map(m => ({ role: m.role, content: m.content }))
+          messages: recentMessages.map(m => ({ role: m.role, content: m.content }))
         })
       });
 
       const data = await response.json();
       
-      if (data.error) {
-        throw new Error(data.error);
+      // Better error handling
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'API request failed');
       }
+
+      // Ensure content exists
+      const content = data.content || "I received your message but couldn't generate a response. Please try again.";
 
       setMessages([...newMessages, { 
         role: 'assistant', 
-        content: data.content,
+        content: content,
         timestamp: new Date()
       }]);
     } catch (error) {
+      console.error('Chat error:', error);
       setMessages([...newMessages, { 
         role: 'assistant', 
         content: "I apologize, but I'm having trouble connecting right now. Please try again in a moment.",
@@ -144,12 +175,17 @@ const SolanaAssistant = () => {
                 </span>
               </div>
             )}
+            {sessionCount > 0 && (
+              <div className="flex items-center gap-1.5 text-purple-300/60">
+                <Eye className="w-3.5 h-3.5" />
+                <span className="text-xs">{sessionCount.toLocaleString()} sessions</span>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-3 flex-wrap justify-center">
             <span className="text-purple-300 text-xs font-semibold">Socials:</span>
             {socialLinks.map((link, idx) => (
               
-                <a
                 key={idx}
                 href={link.url}
                 target="_blank"
