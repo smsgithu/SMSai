@@ -436,7 +436,7 @@ const SolanaAssistant = () => {
                 >
                   Maybe Later
                 </button>
-              </div>
+              
               <p className="text-xs text-purple-300/60 mt-4">
                 100% free • No transactions • Just sign-in
               </p>
