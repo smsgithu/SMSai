@@ -21,6 +21,7 @@ const SolanaAssistant = () => {
   const [userXP, setUserXP] = useState(0);
   const [questionCount, setQuestionCount] = useState(0);
   const [showWalletPrompt, setShowWalletPrompt] = useState(false);
+  const [connectionMessage, setConnectionMessage] = useState('');
   const messagesEndRef = useRef(null);
   const hasTrackedSession = useRef(false);
 
@@ -113,51 +114,70 @@ const SolanaAssistant = () => {
       let provider;
 
       if (walletName === 'solflare') {
-        wallet = window.solflare;
-        if (!wallet) {
+        // Solflare uses window.solflare
+        if (window.solflare && window.solflare.isSolflare) {
+          wallet = window.solflare;
+          provider = 'solflare';
+        } else {
           window.open('https://solflare.com/', '_blank');
-          alert('Please install Solflare wallet! Visit solflare.com');
+          alert('Solflare wallet not detected.\n\n1. Install Solflare from solflare.com\n2. Refresh this page\n3. Try connecting again');
           return;
         }
-        provider = 'solflare';
       } else if (walletName === 'jupiter') {
-        // Jupiter mobile wallet
-        wallet = window.jupiter;
-        if (!wallet) {
-          // Check if on mobile
+        // Jupiter uses window.jupiter - primarily mobile
+        if (window.jupiter) {
+          wallet = window.jupiter;
+          provider = 'jupiter';
+        } else {
           const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
           if (isMobile) {
             window.open('https://jup.ag/mobile', '_blank');
-            alert('Please install Jupiter Mobile wallet!');
+            alert('Jupiter Mobile wallet not detected.\n\nPlease install Jupiter Mobile and try again.');
           } else {
-            alert('Jupiter Mobile is available on mobile devices. Use Solflare or Phantom on desktop.');
+            alert('Jupiter Mobile is designed for mobile devices.\n\nOn desktop, please use Phantom or Solflare.');
           }
           return;
         }
-        provider = 'jupiter';
       } else {
-        // Phantom
-        wallet = window.solana;
-        if (!wallet?.isPhantom) {
+        // Phantom uses window.solana with isPhantom flag
+        if (window.solana && window.solana.isPhantom) {
+          wallet = window.solana;
+          provider = 'phantom';
+        } else {
           window.open('https://phantom.app/', '_blank');
-          alert('Please install Phantom wallet! Visit phantom.app');
+          alert('Phantom wallet not detected.\n\n1. Install Phantom from phantom.app\n2. Refresh this page\n3. Try connecting again');
           return;
         }
-        provider = 'phantom';
       }
 
       // Connect to wallet
       const response = await wallet.connect();
       const address = response.publicKey.toString();
       
+      // Check if this wallet was previously connected (for XP logic)
+      const previousWallet = localStorage.getItem('smsai_wallet');
+      const isReturningWallet = previousWallet === address;
+      
       setWalletAddress(address);
       setWalletConnected(true);
       setWalletType(provider);
       setShowWalletPrompt(false);
       
-      // Award connection XP
-      const newXP = userXP + 20;
-      setUserXP(newXP);
+      // Award connection XP only for new wallet connections
+      let newXP = userXP;
+      let message = '';
+      if (!isReturningWallet) {
+        newXP = userXP + 20;
+        setUserXP(newXP);
+        message = '🎉 Wallet connected! +20 XP awarded';
+        console.log('Welcome bonus: +20 XP for connecting your wallet!');
+      } else {
+        message = '👋 Welcome back! Your progress has been restored.';
+        console.log('Welcome back! Your XP has been restored.');
+      }
+      
+      setConnectionMessage(message);
+      setTimeout(() => setConnectionMessage(''), 5000);
       
       // Save to localStorage
       localStorage.setItem('smsai_wallet', address);
@@ -171,13 +191,20 @@ const SolanaAssistant = () => {
         body: JSON.stringify({ 
           wallet_address: address,
           wallet_type: provider,
-          timestamp: new Date() 
+          timestamp: new Date(),
+          is_returning: isReturningWallet
         })
       }).catch(() => {});
       
     } catch (error) {
       console.error('Wallet connection failed:', error);
-      alert('Wallet connection was cancelled or failed. Please try again.');
+      
+      // Better error messages
+      if (error.message && error.message.includes('User rejected')) {
+        alert('Connection cancelled. Click the wallet button when ready to connect.');
+      } else {
+        alert('Wallet connection failed.\n\nPlease try:\n1. Refreshing the page\n2. Unlocking your wallet\n3. Trying a different wallet');
+      }
     }
   };
 
@@ -269,10 +296,19 @@ const SolanaAssistant = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
+      {/* Connection Success Message */}
+      {connectionMessage && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
+          <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-full shadow-lg border border-green-400/30 flex items-center gap-2">
+            <span className="font-semibold">{connectionMessage}</span>
+          </div>
+        </div>
+      )}
+
       {/* Wallet Connect Prompt Modal */}
       {showWalletPrompt && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-          <div className="bg-gradient-to-br from-slate-900 to-purple-900 border border-purple-500/30 rounded-2xl p-8 max-w-md w-full">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 py-8">
+          <div className="bg-gradient-to-br from-slate-900 to-purple-900 border border-purple-500/30 rounded-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="text-center">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4">
                 <Wallet className="w-8 h-8 text-white" />
@@ -284,26 +320,82 @@ const SolanaAssistant = () => {
               <p className="text-sm text-purple-300 mb-4">Choose your preferred wallet:</p>
               <div className="space-y-3">
                 <button
-                  onClick={() => connectWallet('solflare')}
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-6 py-4 font-semibold hover:from-purple-500 hover:to-pink-500 transition-all flex items-center justify-center gap-2"
-                >
-                  <Wallet className="w-5 h-5" />
-                  Solflare
-                </button>
-                <button
                   onClick={() => connectWallet('phantom')}
                   className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl px-6 py-4 font-semibold hover:from-indigo-500 hover:to-purple-500 transition-all flex items-center justify-center gap-2"
                 >
                   <Wallet className="w-5 h-5" />
-                  Phantom
+                  <div className="flex flex-col items-start">
+                    <span>Phantom</span>
+                    <span className="text-xs font-normal opacity-80">Works on mobile & desktop</span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => connectWallet('solflare')}
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-6 py-4 font-semibold hover:from-purple-500 hover:to-pink-500 transition-all flex items-center justify-center gap-2"
+                >
+                  <Wallet className="w-5 h-5" />
+                  <div className="flex flex-col items-start">
+                    <span>Solflare</span>
+                    <span className="text-xs font-normal opacity-80">Works on mobile & desktop</span>
+                  </div>
                 </button>
                 <button
                   onClick={() => connectWallet('jupiter')}
                   className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl px-6 py-4 font-semibold hover:from-green-500 hover:to-teal-500 transition-all flex items-center justify-center gap-2"
                 >
                   <Wallet className="w-5 h-5" />
-                  Jupiter Mobile
+                  <div className="flex flex-col items-start">
+                    <span>Jupiter Mobile</span>
+                    <span className="text-xs font-normal opacity-80">Mobile app only</span>
+                  </div>
                 </button>
+                
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-purple-500/30"></div>
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="bg-gradient-to-br from-slate-900 to-purple-900 px-3 text-purple-300">
+                      Don't have a wallet?
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="bg-purple-900/30 border border-purple-500/30 rounded-xl p-4">
+                  <h3 className="text-white font-semibold mb-2 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    Create Your First Wallet
+                  </h3>
+                  <p className="text-sm text-purple-200 mb-3">
+                    New to Solana? Create a free wallet in 2 minutes:
+                  </p>
+                  <ol className="text-sm text-purple-200 space-y-2 mb-3">
+                    <li className="flex gap-2">
+                      <span className="font-bold text-purple-400">1.</span>
+                      <span>Visit <a href="https://phantom.app" target="_blank" rel="noopener noreferrer" className="text-pink-400 hover:underline">phantom.app</a> or <a href="https://solflare.com" target="_blank" rel="noopener noreferrer" className="text-pink-400 hover:underline">solflare.com</a></span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="font-bold text-purple-400">2.</span>
+                      <span>Install the browser extension or mobile app</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="font-bold text-purple-400">3.</span>
+                      <span>Create a new wallet (takes 30 seconds)</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="font-bold text-purple-400">4.</span>
+                      <span>Save your seed phrase securely (never share it!)</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="font-bold text-purple-400">5.</span>
+                      <span>Come back here and click the wallet button above</span>
+                    </li>
+                  </ol>
+                  <p className="text-xs text-purple-300/80 italic">
+                    💡 Your wallet is free, requires no personal info, and you don't need any crypto to create it.
+                  </p>
+                </div>
+                
                 <button
                   onClick={() => setShowWalletPrompt(false)}
                   className="w-full bg-white/10 text-purple-200 rounded-xl px-6 py-3 font-medium hover:bg-white/20 transition-all"
@@ -399,11 +491,12 @@ const SolanaAssistant = () => {
               <p className="text-sm text-purple-300">Your AI Guide to the Solana Ecosystem</p>
             </div>
           </div>
-          {!walletConnected && questionCount > 0 && (
-            <div className="hidden sm:block text-sm text-purple-300/80">
-              {5 - questionCount} free questions left
+          <div className="hidden sm:flex items-center gap-4">
+            <div className="text-sm text-purple-300/80">
+              <Eye className="w-4 h-4 inline mr-1" />
+              {sessionCount.toLocaleString()} visits
             </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -489,6 +582,13 @@ const SolanaAssistant = () => {
 
       <div className="bg-black/40 backdrop-blur-lg border-t border-purple-500/30 px-4 py-4">
         <div className="max-w-3xl mx-auto">
+          {!walletConnected && questionCount > 0 && questionCount < 5 && (
+            <div className="text-center mb-3">
+              <span className="text-sm text-purple-300 bg-purple-900/30 px-4 py-2 rounded-full border border-purple-500/30">
+                {5 - questionCount} free {5 - questionCount === 1 ? 'question' : 'questions'} remaining
+              </span>
+            </div>
+          )}
           <div className="flex gap-3">
             <input
               type="text"
