@@ -1,30 +1,52 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, BookOpen, Wallet, Coins, TrendingUp, Shield, Sparkles } from 'lucide-react';
+import { Send, Loader2, BookOpen, Wallet, Coins, TrendingUp, Shield, Sparkles, Home } from 'lucide-react';
 
 const SolanaAssistant = () => {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "Hey! Welcome to Solana Made Simple. I'm your AI guide to everything Solana. Whether you're just getting started with wallets and seed phrases, curious about DeFi and staking, or want to understand the memecoin phenomenon and RWA (Real World Assets), I'm here to help. What would you like to learn about today?"
+      content: "👋 🌟 Welcome to SMSai\n\nYour guide to the Solana ecosystem — from wallets and seed phrases to staking, DeFi, memecoins, RWAs, and how Solana actually works under the hood.\n\nType: Just ask me anything about Solana!"
     }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [solPrice, setSolPrice] = useState(null);
+  const [btcPrice, setBtcPrice] = useState(null);
   const messagesEndRef = useRef(null);
 
   const quickPrompts = [
-    { icon: Wallet, text: "How do I create a Solana wallet?", color: "from-purple-500 to-pink-500" },
-    { icon: Shield, text: "What are seed phrases?", color: "from-blue-500 to-cyan-500" },
-    { icon: TrendingUp, text: "Explain DeFi and staking", color: "from-green-500 to-emerald-500" },
-    { icon: Coins, text: "Tell me about Solana memecoins", color: "from-orange-500 to-red-500" }
+    { icon: Wallet, text: 'How do wallets work?' },
+    { icon: Shield, text: 'What is a seed phrase?' },
+    { icon: TrendingUp, text: 'Explain DeFi and staking' },
+    { icon: Coins, text: 'How do Solana memecoins work?' }
   ];
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  // Fetch crypto prices
+  useEffect(() => {
+    const fetchPrices = async () => {
+      try {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana,bitcoin&vs_currencies=usd&include_24hr_change=true');
+        const data = await response.json();
+        setSolPrice({
+          price: data.solana.usd,
+          change: data.solana.usd_24h_change
+        });
+        setBtcPrice({
+          price: data.bitcoin.usd,
+          change: data.bitcoin.usd_24h_change
+        });
+      } catch (error) {
+        console.error('Failed to fetch prices:', error);
+      }
+    };
+
+    fetchPrices();
+    const interval = setInterval(fetchPrices, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleSubmit = async (promptText = null) => {
@@ -38,51 +60,26 @@ const SolanaAssistant = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: `You are an educational AI assistant for "Solana Made Simple," a trusted educational platform in the Solana ecosystem. Your role is to teach users about Solana in a friendly, clear, and engaging way.
-
-Your creator is a Solana Luminary (official Solana advocate/creator), has a monetized YouTube channel and X account, and has worked with major Solana projects like Marinade Labs and Zeus Network.
-
-Cover these topics based on user questions:
-- **Beginner Level**: Creating wallets, seed phrases/recovery phrases, public addresses, basic blockchain concepts
-- **Intermediate**: DeFi protocols, staking, validators, transaction mechanics
-- **Advanced**: Memecoins, RWAs (Real World Assets), ecosystem growth, specific protocols
-
-**Tone & Style**:
-- Friendly and conversational, like a knowledgeable friend
-- Break down complex concepts into simple terms
-- Use analogies when helpful
-- Encourage questions and curiosity
-- Keep responses concise but thorough (2-4 paragraphs typically)
-- Celebrate the Solana ecosystem's innovation
-
-**Safety Reminders**:
-- Always emphasize the importance of keeping seed phrases private and secure
-- Warn about common scams when relevant
-- Encourage users to verify information and do their own research for financial decisions
-
-Be enthusiastic about Solana while maintaining educational integrity. You're here to empower users with knowledge, not financial advice.`,
-          messages: newMessages.map(msg => ({
-            role: msg.role,
-            content: msg.content
-          }))
+          messages: newMessages
         })
       });
 
       const data = await response.json();
-      const assistantMessage = data.content
-        .filter(block => block.type === 'text')
-        .map(block => block.text)
-        .join('\n');
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
-      setMessages([...newMessages, { role: 'assistant', content: assistantMessage }]);
+      setMessages([...newMessages, { 
+        role: 'assistant', 
+        content: data.content 
+      }]);
     } catch (error) {
       setMessages([...newMessages, { 
         role: 'assistant', 
@@ -93,15 +90,61 @@ Be enthusiastic about Solana while maintaining educational integrity. You're her
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
+  const resetChat = () => {
+    setMessages([
+      {
+        role: 'assistant',
+        content: "👋 🌟 Welcome to SMSai\n\nYour guide to the Solana ecosystem — from wallets and seed phrases to staking, DeFi, memecoins, RWAs, and how Solana actually works under the hood.\n\nType: Just ask me anything about Solana!"
+      }
+    ]);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
+      {/* Price Ticker & Social Links */}
+      <div className="bg-black/60 backdrop-blur-md border-b border-purple-500/20 px-4 py-2">
+        <div className="max-w-6xl mx-auto flex items-center justify-between text-sm">
+          <div className="flex items-center gap-6">
+            {solPrice && (
+              <div className="flex items-center gap-2">
+                <span className="text-purple-300 font-semibold">SOL</span>
+                <span className="text-white font-bold">${solPrice.price.toFixed(2)}</span>
+                <span className={`text-xs ${solPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {solPrice.change >= 0 ? '↑' : '↓'} {Math.abs(solPrice.change).toFixed(2)}%
+                </span>
+              </div>
+            )}
+            {btcPrice && (
+              <div className="flex items-center gap-2">
+                <span className="text-orange-300 font-semibold">BTC</span>
+                <span className="text-white font-bold">${btcPrice.price.toLocaleString()}</span>
+                <span className={`text-xs ${btcPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {btcPrice.change >= 0 ? '↑' : '↓'} {Math.abs(btcPrice.change).toFixed(2)}%
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-4">
+            <a 
+              href="https://x.com/smsonx" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-purple-300 hover:text-purple-100 transition-colors flex items-center gap-1"
+            >
+              <span className="text-xs">@smsonx</span>
+            </a>
+            <a 
+              href="https://x.com/solmadesimple" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-purple-300 hover:text-purple-100 transition-colors flex items-center gap-1"
+            >
+              <span className="text-xs">@solmadesimple</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="bg-black/40 backdrop-blur-lg border-b border-purple-500/30 px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
@@ -164,7 +207,7 @@ Be enthusiastic about Solana while maintaining educational integrity. You're her
                 <button
                   key={idx}
                   onClick={() => handleSubmit(prompt.text)}
-                  className={`flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r ${prompt.color} hover:scale-105 transition-transform duration-200 text-white font-medium shadow-lg`}
+                  className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-105 transition-transform duration-200 text-white font-medium shadow-lg"
                 >
                   <prompt.icon className="w-5 h-5" />
                   <span className="text-sm">{prompt.text}</span>
@@ -183,11 +226,24 @@ Be enthusiastic about Solana while maintaining educational integrity. You're her
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit();
+                }
+              }}
               placeholder="Ask anything about Solana..."
               disabled={loading}
               className="flex-1 bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl px-5 py-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
             />
+            {messages.length > 1 && (
+              <button
+                onClick={resetChat}
+                className="bg-purple-600/50 hover:bg-purple-600 text-white rounded-xl px-4 py-3 font-medium transition-all flex items-center gap-2"
+              >
+                <Home className="w-5 h-5" />
+              </button>
+            )}
             <button
               onClick={() => handleSubmit()}
               disabled={loading || !input.trim()}
