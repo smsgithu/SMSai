@@ -35,47 +35,6 @@ const SolanaAssistant = () => {
     { id: 'coinbase', name: 'Coinbase Wallet', window: 'coinbaseSolana', check: (w) => !!w },
   ];
 
-  // Sync user data with backend
-  const syncUserData = async (walletAddress, updates = {}) => {
-    try {
-      const response = await fetch('/api/user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wallet_address: walletAddress,
-          ...updates
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to sync user data');
-      }
-
-      const data = await response.json();
-      return data.user;
-    } catch (error) {
-      console.error('Failed to sync user data:', error);
-      return null;
-    }
-  };
-
-  // Load user data from backend
-  const loadUserData = async (walletAddress) => {
-    try {
-      const response = await fetch(`/api/user?wallet_address=${walletAddress}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to load user data');
-      }
-
-      const data = await response.json();
-      return data.user;
-    } catch (error) {
-      console.error('Failed to load user data:', error);
-      return null;
-    }
-  };
-
   const quickPrompts = [
     { icon: Wallet, text: 'How do wallets work?' },
     { icon: Shield, text: 'What is a seed phrase?' },
@@ -118,15 +77,28 @@ const SolanaAssistant = () => {
       // Check if wallet already connected
       const savedWallet = localStorage.getItem('smsai_wallet');
       const savedWalletType = localStorage.getItem('smsai_wallet_type');
-      const savedXP = parseInt(localStorage.getItem('smsai_xp') || '0');
-      const savedQuestions = parseInt(localStorage.getItem('smsai_questions') || '0');
       
       if (savedWallet) {
         setWalletConnected(true);
         setWalletAddress(savedWallet);
         setWalletType(savedWalletType || 'unknown');
-        setUserXP(savedXP);
-        setQuestionCount(savedQuestions);
+        
+        // Load XP from database
+        fetch(`/api/user?wallet_address=${savedWallet}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.user) {
+              setUserXP(data.user.xp);
+              setQuestionCount(data.user.total_questions);
+            }
+          })
+          .catch(() => {
+            // Fallback to localStorage if API fails
+            const savedXP = parseInt(localStorage.getItem('smsai_xp') || '0');
+            const savedQuestions = parseInt(localStorage.getItem('smsai_questions') || '0');
+            setUserXP(savedXP);
+            setQuestionCount(savedQuestions);
+          });
       }
 
       // Detect installed wallets
@@ -210,46 +182,51 @@ const SolanaAssistant = () => {
       
       console.log('Connected successfully:', address);
       
-      // Load user data from backend
-      const userData = await loadUserData(address);
-      
-      let newXP = userXP;
-      let newQuestionCount = questionCount;
-      let message = '';
-      
-      if (userData) {
-        // User exists in database - load their data
-        newXP = userData.xp || 0;
-        newQuestionCount = userData.questions_asked || 0;
-        message = `👋 Welcome back! You have ${newXP} XP`;
-        console.log('Loaded user data from backend:', userData);
-      } else {
-        // New user - award welcome bonus and create account
-        newXP = 20;
-        await syncUserData(address, {
-          wallet_type: walletName,
-          xp: 20,
-          questions_asked: 0
-        });
-        message = '🎉 Wallet connected! +20 XP welcome bonus';
-        console.log('New user created with welcome bonus');
-      }
-      
       setWalletAddress(address);
       setWalletConnected(true);
       setWalletType(walletName);
-      setUserXP(newXP);
-      setQuestionCount(newQuestionCount);
       setShowWalletPrompt(false);
       
-      setConnectionMessage(message);
-      setTimeout(() => setConnectionMessage(''), 5000);
-      
-      // Save to localStorage as backup
+      // Save to localStorage
       localStorage.setItem('smsai_wallet', address);
       localStorage.setItem('smsai_wallet_type', walletName);
-      localStorage.setItem('smsai_xp', newXP.toString());
-      localStorage.setItem('smsai_questions', newQuestionCount.toString());
+      
+      // Save to database and get user data
+      fetch('/api/user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          wallet_address: address,
+          wallet_type: walletName,
+          action: 'connect'
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log('User saved to database:', data);
+        if (data.user) {
+          const isNewUser = data.user.xp === 20 && data.user.total_questions === 0;
+          setUserXP(data.user.xp);
+          setQuestionCount(data.user.total_questions);
+          localStorage.setItem('smsai_xp', data.user.xp.toString());
+          
+          if (isNewUser) {
+            setConnectionMessage('🎉 Wallet connected! +20 XP awarded');
+          } else {
+            setConnectionMessage('👋 Welcome back! Your progress has been restored.');
+          }
+          setTimeout(() => setConnectionMessage(''), 5000);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to save user to database:', err);
+        // Fallback to localStorage
+        const newXP = userXP + 20;
+        setUserXP(newXP);
+        localStorage.setItem('smsai_xp', newXP.toString());
+        setConnectionMessage('🎉 Wallet connected! +20 XP awarded (saved locally)');
+        setTimeout(() => setConnectionMessage(''), 5000);
+      });
       
     } catch (error) {
       console.error('Wallet connection error:', error);
@@ -273,9 +250,11 @@ const SolanaAssistant = () => {
     setWalletAddress('');
     setWalletType('');
     setUserXP(0);
+    setQuestionCount(0);
     localStorage.removeItem('smsai_wallet');
     localStorage.removeItem('smsai_wallet_type');
     localStorage.removeItem('smsai_xp');
+    localStorage.removeItem('smsai_questions');
   };
 
   const handleSubmit = async (promptText = null) => {
@@ -294,21 +273,16 @@ const SolanaAssistant = () => {
     setInput('');
     setLoading(true);
 
-    // Increment question count and XP
+    // Increment question count locally
     const newQuestionCount = questionCount + 1;
     setQuestionCount(newQuestionCount);
     localStorage.setItem('smsai_questions', newQuestionCount.toString());
     
+    // Increment XP locally
     if (walletConnected) {
       const newXP = userXP + 5;
       setUserXP(newXP);
       localStorage.setItem('smsai_xp', newXP.toString());
-      
-      // Sync XP with backend
-      syncUserData(walletAddress, {
-        xp: newXP,
-        questions_asked: newQuestionCount
-      }).catch(err => console.error('Failed to sync XP:', err));
     }
 
     try {
@@ -338,6 +312,25 @@ const SolanaAssistant = () => {
         content: content,
         timestamp: new Date()
       }]);
+
+      // Update XP in database (async, don't block UI)
+      if (walletConnected) {
+        fetch('/api/user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            wallet_address: walletAddress,
+            action: 'question'
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          console.log('XP updated in database:', data);
+        })
+        .catch(err => {
+          console.error('Failed to update XP in database:', err);
+        });
+      }
     } catch (error) {
       console.error('Chat error:', error);
       setMessages([...newMessages, { 
@@ -482,7 +475,7 @@ const SolanaAssistant = () => {
                 >
                   Maybe Later
                 </button>
-              
+              </div>
               <p className="text-xs text-purple-300/60 mt-4">
                 100% free • No transactions • Just sign-in
               </p>
