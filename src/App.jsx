@@ -157,15 +157,19 @@ const SolanaAssistant = () => {
           change: cgData.bitcoin.usd_24h_change
         });
 
-        // Fetch SMS from Jupiter API
+        // Fetch SMS from Birdeye API
         const smsContract = 'A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS';
-        const jupResponse = await fetch(`https://price.jup.ag/v4/price?ids=${smsContract}`);
-        const jupData = await jupResponse.json();
+        const birdeyeResponse = await fetch(`https://public-api.birdeye.so/defi/price?address=${smsContract}`, {
+          headers: {
+            'X-API-KEY': 'public' // Birdeye public API
+          }
+        });
+        const birdeyeData = await birdeyeResponse.json();
         
-        if (jupData.data && jupData.data[smsContract]) {
+        if (birdeyeData.success && birdeyeData.data?.value) {
           setSmsPrice({
-            price: jupData.data[smsContract].price,
-            change: 0 // Jupiter doesn't provide 24h change easily
+            price: birdeyeData.data.value,
+            change: birdeyeData.data.priceChange24h || 0
           });
         }
       } catch (error) {
@@ -566,6 +570,11 @@ const SolanaAssistant = () => {
                 <span className="text-white font-bold text-xs sm:text-sm">
                   ${smsPrice.price < 0.01 ? smsPrice.price.toFixed(6) : smsPrice.price.toFixed(4)}
                 </span>
+                {smsPrice.change !== 0 && (
+                  <span className={`text-xs ${smsPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {smsPrice.change >= 0 ? '↑' : '↓'} {Math.abs(smsPrice.change).toFixed(2)}%
+                  </span>
+                )}
               </div>
             )}
             {walletConnected ? (
