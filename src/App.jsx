@@ -157,19 +157,17 @@ const SolanaAssistant = () => {
           change: cgData.bitcoin.usd_24h_change
         });
 
-        // Fetch SMS from Birdeye API
+        // Fetch SMS from DexScreener API (free, no API key needed)
         const smsContract = 'A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS';
-        const birdeyeResponse = await fetch(`https://public-api.birdeye.so/defi/price?address=${smsContract}`, {
-          headers: {
-            'X-API-KEY': 'public' // Birdeye public API
-          }
-        });
-        const birdeyeData = await birdeyeResponse.json();
+        const dexResponse = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${smsContract}`);
+        const dexData = await dexResponse.json();
         
-        if (birdeyeData.success && birdeyeData.data?.value) {
+        // DexScreener returns array of pairs, get the one with highest liquidity
+        if (dexData.pairs && dexData.pairs.length > 0) {
+          const mainPair = dexData.pairs[0]; // First pair usually has most liquidity
           setSmsPrice({
-            price: birdeyeData.data.value,
-            change: birdeyeData.data.priceChange24h || 0
+            price: parseFloat(mainPair.priceUsd),
+            change: parseFloat(mainPair.priceChange?.h24 || 0)
           });
         }
       } catch (error) {
