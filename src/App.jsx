@@ -417,7 +417,18 @@ const SolanaAssistant = () => {
       {/* Wallet Connect Prompt Modal */}
       {showWalletPrompt && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 py-8">
-          <div className="bg-gradient-to-br from-slate-900 to-purple-900 border border-purple-500/30 rounded-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-gradient-to-br from-slate-900 to-purple-900 border border-purple-500/30 rounded-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto relative">
+            {/* Close button */}
+            <button
+              onClick={() => setShowWalletPrompt(false)}
+              className="absolute top-4 right-4 text-purple-300 hover:text-white transition-colors"
+              aria-label="Close"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
             <div className="text-center">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4">
                 <Wallet className="w-8 h-8 text-white" />
@@ -428,49 +439,18 @@ const SolanaAssistant = () => {
               </p>
               <p className="text-sm text-purple-300 mb-3">Select your wallet:</p>
               
-              <div className="space-y-2 mb-4">
-                {/* Installed wallets first */}
-                {detectedWallets.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-xs text-green-400 font-semibold mb-1">✓ Installed wallets:</p>
-                    {walletOptions
-                      .filter(w => detectedWallets.includes(w.id))
-                      .map((wallet) => (
-                        <button
-                          key={wallet.id}
-                          onClick={() => connectWallet(wallet.id)}
-                          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl px-6 py-3 font-semibold hover:from-green-500 hover:to-emerald-500 transition-all flex items-center justify-center gap-2"
-                        >
-                          <Wallet className="w-5 h-5" />
-                          {wallet.name}
-                        </button>
-                      ))
-                    }
-                  </div>
-                )}
-                
-                {/* Other wallets */}
-                {walletOptions.filter(w => !detectedWallets.includes(w.id)).length > 0 && (
-                  <div className="space-y-2 mt-4">
-                    <p className="text-xs text-purple-400 font-semibold mb-1">
-                      {detectedWallets.length > 0 ? 'Other wallets:' : 'Available wallets:'}
-                    </p>
-                    {walletOptions
-                      .filter(w => !detectedWallets.includes(w.id))
-                      .map((wallet) => (
-                        <button
-                          key={wallet.id}
-                          onClick={() => connectWallet(wallet.id)}
-                          className="w-full bg-white/10 text-white rounded-xl px-6 py-3 font-medium hover:bg-white/20 transition-all flex items-center justify-center gap-2 border border-white/20"
-                        >
-                          <Wallet className="w-5 h-5" />
-                          {wallet.name}
-                          <span className="text-xs opacity-60 ml-auto">(Not installed)</span>
-                        </button>
-                      ))
-                    }
-                  </div>
-                )}
+              <div className="space-y-3 mb-4">
+                {/* Show all wallets - no detection */}
+                {walletOptions.map((wallet) => (
+                  <button
+                    key={wallet.id}
+                    onClick={() => connectWallet(wallet.id)}
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-6 py-3 font-semibold hover:from-purple-500 hover:to-pink-500 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Wallet className="w-5 h-5" />
+                    {wallet.name}
+                  </button>
+                ))}
               </div>
               
                 <div className="relative my-6">
