@@ -14,6 +14,7 @@ const SolanaAssistant = () => {
   const [loading, setLoading] = useState(false);
   const [solPrice, setSolPrice] = useState(null);
   const [btcPrice, setBtcPrice] = useState(null);
+  const [smsPrice, setSmsPrice] = useState(null);
   const [sessionCount, setSessionCount] = useState(0);
   const [walletConnected, setWalletConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState('');
@@ -34,61 +35,6 @@ const SolanaAssistant = () => {
     { id: 'glow', name: 'Glow', window: 'glow', check: (w) => !!w },
     { id: 'coinbase', name: 'Coinbase Wallet', window: 'coinbaseSolana', check: (w) => !!w },
   ];
-
-  // Confetti celebration function
-  const triggerConfetti = () => {
-    const duration = 3 * 1000;
-    const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-    function randomInRange(min, max) {
-      return Math.random() * (max - min) + min;
-    }
-
-    const interval = setInterval(function() {
-      const timeLeft = animationEnd - Date.now();
-
-      if (timeLeft <= 0) {
-        return clearInterval(interval);
-      }
-
-      const particleCount = 50 * (timeLeft / duration);
-      
-      // Create confetti particles manually
-      const colors = ['#9333ea', '#ec4899', '#8b5cf6', '#d946ef', '#a855f7'];
-      const confettiElements = [];
-      
-      for (let i = 0; i < particleCount; i++) {
-        const confetti = document.createElement('div');
-        confetti.style.position = 'fixed';
-        confetti.style.width = '10px';
-        confetti.style.height = '10px';
-        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        confetti.style.left = Math.random() * window.innerWidth + 'px';
-        confetti.style.top = '-10px';
-        confetti.style.opacity = '1';
-        confetti.style.transform = 'rotate(' + Math.random() * 360 + 'deg)';
-        confetti.style.transition = 'all 3s ease-out';
-        confetti.style.pointerEvents = 'none';
-        confetti.style.zIndex = '9999';
-        
-        document.body.appendChild(confetti);
-        confettiElements.push(confetti);
-        
-        // Animate
-        setTimeout(() => {
-          confetti.style.top = window.innerHeight + 'px';
-          confetti.style.left = (parseFloat(confetti.style.left) + randomInRange(-100, 100)) + 'px';
-          confetti.style.opacity = '0';
-        }, 10);
-        
-        // Remove after animation
-        setTimeout(() => {
-          confetti.remove();
-        }, 3000);
-      }
-    }, 250);
-  };
 
   // Sync user data with backend
   const syncUserData = async (walletAddress, updates = {}) => {
@@ -198,23 +144,37 @@ const SolanaAssistant = () => {
   useEffect(() => {
     const fetchPrices = async () => {
       try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana,bitcoin&vs_currencies=usd&include_24hr_change=true');
-        const data = await response.json();
+        // Fetch SOL and BTC from CoinGecko (has 24h change)
+        const cgResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana,bitcoin&vs_currencies=usd&include_24hr_change=true');
+        const cgData = await cgResponse.json();
+        
         setSolPrice({
-          price: data.solana.usd,
-          change: data.solana.usd_24h_change
+          price: cgData.solana.usd,
+          change: cgData.solana.usd_24h_change
         });
         setBtcPrice({
-          price: data.bitcoin.usd,
-          change: data.bitcoin.usd_24h_change
+          price: cgData.bitcoin.usd,
+          change: cgData.bitcoin.usd_24h_change
         });
+
+        // Fetch SMS from Jupiter API
+        const smsContract = 'A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS';
+        const jupResponse = await fetch(`https://price.jup.ag/v4/price?ids=${smsContract}`);
+        const jupData = await jupResponse.json();
+        
+        if (jupData.data && jupData.data[smsContract]) {
+          setSmsPrice({
+            price: jupData.data[smsContract].price,
+            change: 0 // Jupiter doesn't provide 24h change easily
+          });
+        }
       } catch (error) {
         console.error('Failed to fetch prices:', error);
       }
     };
 
     fetchPrices();
-    const interval = setInterval(fetchPrices, 300000);
+    const interval = setInterval(fetchPrices, 300000); // 5 minutes
     return () => clearInterval(interval);
   }, []);
 
@@ -336,9 +296,6 @@ const SolanaAssistant = () => {
       
       setConnectionMessage(message);
       setTimeout(() => setConnectionMessage(''), 5000);
-      
-      // Trigger confetti celebration!
-      triggerConfetti();
       
       // Save to localStorage as backup
       localStorage.setItem('smsai_wallet', address);
@@ -466,9 +423,18 @@ const SolanaAssistant = () => {
       {/* Connection Success Message */}
       {connectionMessage && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
-          <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-full shadow-lg border border-green-400/30 flex items-center gap-2">
+          <div className="bg-green-600/30 backdrop-blur-md text-white px-6 py-3 rounded-full shadow-lg border border-green-400/50 flex items-center gap-3 relative">
             <span className="text-2xl">🎉</span>
             <span className="font-semibold">{connectionMessage}</span>
+            <button
+              onClick={() => setConnectionMessage('')}
+              className="ml-2 text-white/80 hover:text-white transition-colors"
+              aria-label="Close"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
       )}
@@ -591,6 +557,14 @@ const SolanaAssistant = () => {
                 <span className="text-white font-bold text-xs sm:text-sm">${btcPrice.price.toLocaleString()}</span>
                 <span className={`text-xs ${btcPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {btcPrice.change >= 0 ? '↑' : '↓'} {Math.abs(btcPrice.change).toFixed(2)}%
+                </span>
+              </div>
+            )}
+            {smsPrice && (
+              <div className="flex items-center gap-2">
+                <span className="text-pink-400 font-semibold text-xs sm:text-sm">SMS</span>
+                <span className="text-white font-bold text-xs sm:text-sm">
+                  ${smsPrice.price < 0.01 ? smsPrice.price.toFixed(6) : smsPrice.price.toFixed(4)}
                 </span>
               </div>
             )}
