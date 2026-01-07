@@ -35,6 +35,61 @@ const SolanaAssistant = () => {
     { id: 'coinbase', name: 'Coinbase Wallet', window: 'coinbaseSolana', check: (w) => !!w },
   ];
 
+  // Confetti celebration function
+  const triggerConfetti = () => {
+    const duration = 3 * 1000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+    function randomInRange(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    const interval = setInterval(function() {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      
+      // Create confetti particles manually
+      const colors = ['#9333ea', '#ec4899', '#8b5cf6', '#d946ef', '#a855f7'];
+      const confettiElements = [];
+      
+      for (let i = 0; i < particleCount; i++) {
+        const confetti = document.createElement('div');
+        confetti.style.position = 'fixed';
+        confetti.style.width = '10px';
+        confetti.style.height = '10px';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.left = Math.random() * window.innerWidth + 'px';
+        confetti.style.top = '-10px';
+        confetti.style.opacity = '1';
+        confetti.style.transform = 'rotate(' + Math.random() * 360 + 'deg)';
+        confetti.style.transition = 'all 3s ease-out';
+        confetti.style.pointerEvents = 'none';
+        confetti.style.zIndex = '9999';
+        
+        document.body.appendChild(confetti);
+        confettiElements.push(confetti);
+        
+        // Animate
+        setTimeout(() => {
+          confetti.style.top = window.innerHeight + 'px';
+          confetti.style.left = (parseFloat(confetti.style.left) + randomInRange(-100, 100)) + 'px';
+          confetti.style.opacity = '0';
+        }, 10);
+        
+        // Remove after animation
+        setTimeout(() => {
+          confetti.remove();
+        }, 3000);
+      }
+    }, 250);
+  };
+
   // Sync user data with backend
   const syncUserData = async (walletAddress, updates = {}) => {
     try {
@@ -258,7 +313,7 @@ const SolanaAssistant = () => {
         // User exists in database - load their data
         newXP = userData.xp || 0;
         newQuestionCount = userData.questions_asked || 0;
-        message = `👋 Welcome back! You have ${newXP} XP`;
+        message = `Welcome back! You have ${newXP} XP`;
         console.log('Loaded user data from backend:', userData);
       } else {
         // New user - award welcome bonus and create account
@@ -268,7 +323,7 @@ const SolanaAssistant = () => {
           xp: 20,
           questions_asked: 0
         });
-        message = '🎉 Wallet connected! +20 XP welcome bonus';
+        message = 'Wallet connected! +20 XP welcome bonus';
         console.log('New user created with welcome bonus');
       }
       
@@ -281,6 +336,9 @@ const SolanaAssistant = () => {
       
       setConnectionMessage(message);
       setTimeout(() => setConnectionMessage(''), 5000);
+      
+      // Trigger confetti celebration!
+      triggerConfetti();
       
       // Save to localStorage as backup
       localStorage.setItem('smsai_wallet', address);
@@ -407,8 +465,9 @@ const SolanaAssistant = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
       {/* Connection Success Message */}
       {connectionMessage && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
           <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-full shadow-lg border border-green-400/30 flex items-center gap-2">
+            <span className="text-2xl">🎉</span>
             <span className="font-semibold">{connectionMessage}</span>
           </div>
         </div>
