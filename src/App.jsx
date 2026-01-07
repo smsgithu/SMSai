@@ -39,6 +39,7 @@ const SolanaAssistant = () => {
   // Sync user data with backend
   const syncUserData = async (walletAddress, updates = {}) => {
     try {
+      console.log('syncUserData called with:', { walletAddress, updates });
       const response = await fetch('/api/user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -48,11 +49,16 @@ const SolanaAssistant = () => {
         })
       });
 
+      console.log('syncUserData response status:', response.status);
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('syncUserData failed:', errorText);
         throw new Error('Failed to sync user data');
       }
 
       const data = await response.json();
+      console.log('syncUserData success:', data);
       return data.user;
     } catch (error) {
       console.error('Failed to sync user data:', error);
@@ -63,13 +69,19 @@ const SolanaAssistant = () => {
   // Load user data from backend
   const loadUserData = async (walletAddress) => {
     try {
+      console.log('loadUserData called for:', walletAddress);
       const response = await fetch(`/api/user?wallet_address=${walletAddress}`);
       
+      console.log('loadUserData response status:', response.status);
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('loadUserData failed:', errorText);
         throw new Error('Failed to load user data');
       }
 
       const data = await response.json();
+      console.log('loadUserData success:', data);
       return data.user;
     } catch (error) {
       console.error('Failed to load user data:', error);
@@ -364,11 +376,23 @@ const SolanaAssistant = () => {
       setUserXP(newXP);
       localStorage.setItem('smsai_xp', newXP.toString());
       
-      // Sync XP with backend
-      syncUserData(walletAddress, {
-        xp: newXP,
-        questions_asked: newQuestionCount
-      }).catch(err => console.error('Failed to sync XP:', err));
+      // Sync XP with backend - await to ensure it completes
+      try {
+        console.log('Syncing XP to backend:', { xp: newXP, questions: newQuestionCount, wallet: walletAddress });
+        const result = await syncUserData(walletAddress, {
+          xp: newXP,
+          questions_asked: newQuestionCount
+        });
+        if (result) {
+          console.log('XP synced successfully:', result);
+        } else {
+          console.error('XP sync returned null - check API endpoint');
+        }
+      } catch (err) {
+        console.error('Failed to sync XP:', err);
+        // Show user a warning if sync fails
+        console.warn('⚠️ XP not saved to server. Will retry on next question.');
+      }
     }
 
     try {
