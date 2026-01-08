@@ -20,7 +20,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 800,
-        system: `You are SMS AI, the educational assistant for Solana Made Simple.
+        system: `You are SMSai, the educational assistant for Solana Made Simple.
 Teach Solana clearly and honestly.
 Beginner friendly, no hype.
 Use analogies.
