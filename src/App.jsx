@@ -579,33 +579,33 @@ function App() {
               </div>
             )}
             {smsPrice && (
-              <div className="flex items-center gap-2">
-                
-                  href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-pink-400 font-semibold text-xs sm:text-sm hover:text-pink-300 transition-colors"
-                >
-                  $SMS
-                </a>
-                <span className="text-white font-bold text-xs sm:text-sm">
-                  ${smsPrice.price < 0.01 ? smsPrice.price.toFixed(6) : smsPrice.price.toFixed(4)}
-                </span>
-                {smsPrice.change !== 0 && (
-                  <span className={`text-xs ${smsPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {smsPrice.change >= 0 ? '↑' : '↓'} {Math.abs(smsPrice.change).toFixed(2)}%
-                  </span>
-                )}
-                
-                  href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-1 bg-gradient-to-r from-pink-600 to-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold hover:from-pink-500 hover:to-purple-500 transition-all"
-                >
-                  Buy
-                </a>
-              </div>
-            )}
+  <div className="flex items-center gap-2">
+    
+      href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-pink-400 font-semibold text-xs sm:text-sm hover:text-pink-300 transition-colors"
+    >
+      $SMS
+    </a>
+    <span className="text-white font-bold text-xs sm:text-sm">
+      ${smsPrice.price < 0.01 ? smsPrice.price.toFixed(6) : smsPrice.price.toFixed(4)}
+    </span>
+    {smsPrice.change !== 0 && (
+      <span className={`text-xs ${smsPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+        {smsPrice.change >= 0 ? '↑' : '↓'} {Math.abs(smsPrice.change).toFixed(2)}%
+      </span>
+    )}
+    
+      href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="ml-1 bg-gradient-to-r from-pink-600 to-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold hover:from-pink-500 hover:to-purple-500 transition-all"
+    >
+      Buy
+    </a>
+  </div>
+)}
             {walletConnected ? (
               <div className="flex items-center gap-2 bg-gradient-to-r from-purple-600/30 to-pink-600/30 px-3 py-1.5 rounded-full border border-purple-500/30">
                 <User className="w-3.5 h-3.5 text-purple-300" />
