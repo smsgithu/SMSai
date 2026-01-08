@@ -635,7 +635,7 @@ function App() {
               >
                 <span className="text-[10px] text-purple-300">Powered by</span>
                 <img 
-                  src="/sms-logo.png" 
+                  src="/sms.png" 
                   alt="$SMS" 
                   className="h-5 w-auto"
                 />
