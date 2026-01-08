@@ -52,12 +52,11 @@ No financial advice.`,
       });
     }
 
-    // Stream the response directly to the client
     return new Response(anthropicRes.body, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
+        'Connection': 'keep-alive',
       },
     });
   } catch (err) {
