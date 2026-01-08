@@ -1,118 +1,107 @@
+// api/user.js - For Neon Database on Vercel
+// FIXED: Column name is total_questions, not questions_asked
+
 import { sql } from '@vercel/postgres';
 
 export default async function handler(req, res) {
-  // Enable CORS
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  if (req.method === 'POST') {
-    const { wallet_address, wallet_type, action } = req.body;
+  try {
+    const walletAddress = req.method === 'GET' 
+      ? req.query.wallet_address 
+      : req.body.wallet_address;
 
-    if (!wallet_address) {
+    if (!walletAddress) {
       return res.status(400).json({ error: 'Wallet address required' });
     }
 
-    try {
-      // Find or create user
-      let user = await sql`
-        SELECT * FROM users WHERE wallet_address = ${wallet_address}
-      `.then(result => result.rows[0]);
-
-      if (!user) {
-        // Create new user
-        const newUser = await sql`
-          INSERT INTO users (wallet_address, wallet_type, xp, total_questions)
-          VALUES (${wallet_address}, ${wallet_type}, 20, 0)
-          RETURNING *
-        `;
-        user = newUser.rows[0];
-
-        // Log wallet connection XP
-        await sql`
-          INSERT INTO xp_logs (user_id, action, xp_earned)
-          VALUES (${user.id}, 'wallet_connected', 20)
-        `;
-      } else {
-        // Update last active
-        await sql`
-          UPDATE users 
-          SET last_active = NOW()
-          WHERE id = ${user.id}
-        `;
-      }
-
-      // If action is asking a question, update XP
-      if (action === 'question') {
-        const newXP = user.xp + 5;
-        const newQuestions = user.total_questions + 1;
-
-        await sql`
-          UPDATE users 
-          SET xp = ${newXP}, total_questions = ${newQuestions}
-          WHERE id = ${user.id}
-        `;
-
-        await sql`
-          INSERT INTO xp_logs (user_id, action, xp_earned)
-          VALUES (${user.id}, 'question_asked', 5)
-        `;
-
-        user.xp = newXP;
-        user.total_questions = newQuestions;
-      }
-
-      return res.status(200).json({
-        user: {
-          id: user.id,
-          wallet_address: user.wallet_address,
-          xp: user.xp,
-          total_questions: user.total_questions
-        }
-      });
-
-    } catch (error) {
-      console.error('Database error:', error);
-      return res.status(500).json({ error: 'Database error' });
-    }
-  }
-
-  if (req.method === 'GET') {
-    const { wallet_address } = req.query;
-
-    if (!wallet_address) {
-      return res.status(400).json({ error: 'Wallet address required' });
-    }
-
-    try {
-      const result = await sql`
-        SELECT * FROM users WHERE wallet_address = ${wallet_address}
+    // GET - Fetch user data
+    if (req.method === 'GET') {
+      const { rows } = await sql`
+        SELECT * FROM users WHERE wallet_address = ${walletAddress}
       `;
 
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-
-      const user = result.rows[0];
+      // Map database column to frontend expectation
+      const user = rows[0] ? {
+        ...rows[0],
+        questions_asked: rows[0].total_questions // Map for backwards compatibility
+      } : null;
 
       return res.status(200).json({
-        user: {
-          id: user.id,
-          wallet_address: user.wallet_address,
-          xp: user.xp,
-          total_questions: user.total_questions
-        }
+        user: user,
+        exists: !!rows[0]
       });
-
-    } catch (error) {
-      console.error('Database error:', error);
-      return res.status(500).json({ error: 'Database error' });
     }
-  }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+    // POST/PUT - Create or update user data
+    if (req.method === 'POST' || req.method === 'PUT') {
+      const { wallet_type, xp, questions_asked } = req.body;
+
+      // Check if user exists
+      const { rows: existingRows } = await sql`
+        SELECT * FROM users WHERE wallet_address = ${walletAddress}
+      `;
+
+      if (existingRows.length > 0) {
+        // Update existing user
+        const existingUser = existingRows[0];
+        const { rows: updatedRows } = await sql`
+          UPDATE users 
+          SET 
+            wallet_type = ${wallet_type || existingUser.wallet_type},
+            xp = ${xp !== undefined ? xp : existingUser.xp},
+            total_questions = ${questions_asked !== undefined ? questions_asked : existingUser.total_questions},
+            last_active = NOW()
+          WHERE wallet_address = ${walletAddress}
+          RETURNING *
+        `;
+
+        // Map back for response
+        const user = {
+          ...updatedRows[0],
+          questions_asked: updatedRows[0].total_questions
+        };
+
+        return res.status(200).json({
+          user: user,
+          action: 'updated'
+        });
+      } else {
+        // Create new user
+        const { rows: newRows } = await sql`
+          INSERT INTO users (wallet_address, wallet_type, xp, total_questions, created_at, last_active)
+          VALUES (${walletAddress}, ${wallet_type || 'unknown'}, ${xp || 20}, ${questions_asked || 0}, NOW(), NOW())
+          RETURNING *
+        `;
+
+        // Map back for response
+        const user = {
+          ...newRows[0],
+          questions_asked: newRows[0].total_questions
+        };
+
+        return res.status(201).json({
+          user: user,
+          action: 'created'
+        });
+      }
+    }
+
+    return res.status(405).json({ error: 'Method not allowed' });
+
+  } catch (error) {
+    console.error('API Error:', error);
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
+    });
+  }
 }
