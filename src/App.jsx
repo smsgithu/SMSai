@@ -563,7 +563,7 @@ function App() {
                   </span>
                 )}
                 <a
-                  href="https://jup.ag/swap/SOL-A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
+                  href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="ml-1 bg-gradient-to-r from-pink-600 to-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold hover:from-pink-500 hover:to-purple-500 transition-all"
@@ -627,11 +627,11 @@ function App() {
             <div className="ml-auto flex flex-col items-end gap-2">
               <div className="text-xs text-purple-300">👁️ {sessionCount} visits</div>
               <a
-                href="https://jup.ag/swap/SOL-A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
+                href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 bg-black/40 border border-pink-500/30 px-3 py-1.5 rounded-full hover:border-pink-500/50 hover:bg-black/60 transition-all group"
-                title="Click to swap SOL for $SMS on Jupiter"
+                title="View $SMS on Jupiter"
               >
                 <span className="text-[10px] text-purple-300">Powered by</span>
                 <img 
