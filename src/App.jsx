@@ -35,7 +35,6 @@ function App() {
     { id: 'coinbase', name: 'Coinbase Wallet', window: 'coinbaseSolana', check: (w) => !!w },
   ];
 
-  // API Functions with detailed logging
   const syncUserData = async (walletAddress, updates = {}) => {
     try {
       console.log('🔄 [SYNC] Starting sync for:', walletAddress);
@@ -69,7 +68,7 @@ function App() {
       return data.user;
     } catch (error) {
       console.error('❌ [SYNC] Exception:', error);
-      throw error; // Re-throw so caller knows it failed
+      throw error;
     }
   };
 
@@ -121,7 +120,6 @@ function App() {
     return `${address.slice(0, 4)}...${address.slice(-4)}`;
   };
 
-  // Track page views
   useEffect(() => {
     if (!hasTrackedSession.current) {
       hasTrackedSession.current = true;
@@ -131,13 +129,11 @@ function App() {
       localStorage.setItem('smsai_sessions', newCount.toString());
       setSessionCount(newCount);
 
-      // Check if wallet already connected
       const savedWallet = localStorage.getItem('smsai_wallet');
       const savedWalletType = localStorage.getItem('smsai_wallet_type');
       
       if (savedWallet) {
         console.log('🔐 [INIT] Found saved wallet, attempting to load data...');
-        // Load from database
         loadUserData(savedWallet).then(userData => {
           if (userData) {
             console.log('🔐 [INIT] Loaded user data from database:', userData);
@@ -148,7 +144,6 @@ function App() {
             setQuestionCount(userData.questions_asked || 0);
           } else {
             console.log('🔐 [INIT] No user data in database, clearing local storage');
-            // Database has no record, clear localStorage
             localStorage.removeItem('smsai_wallet');
             localStorage.removeItem('smsai_wallet_type');
           }
@@ -157,11 +152,9 @@ function App() {
     }
   }, []);
 
-  // Fetch crypto prices
   useEffect(() => {
     const fetchPrices = async () => {
       try {
-        // SOL and BTC from CoinGecko
         const cgResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana,bitcoin&vs_currencies=usd&include_24hr_change=true');
         const cgData = await cgResponse.json();
         
@@ -174,7 +167,6 @@ function App() {
           change: cgData.bitcoin.usd_24h_change
         });
 
-        // SMS from DexScreener
         const smsContract = 'A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS';
         const dexResponse = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${smsContract}`);
         const dexData = await dexResponse.json();
@@ -230,7 +222,6 @@ function App() {
       console.log('🔌 [WALLET] Connecting...');
       const response = await walletObj.connect();
       
-      // Handle different wallet response formats
       let publicKey;
       if (walletName === 'solflare') {
         publicKey = walletObj.publicKey || response?.publicKey;
@@ -245,7 +236,6 @@ function App() {
       const address = typeof publicKey === 'string' ? publicKey : publicKey.toString();
       console.log('✅ [WALLET] Connected:', address);
       
-      // Load user data from database
       const userData = await loadUserData(address);
       
       let newXP = 0;
@@ -253,13 +243,11 @@ function App() {
       let message = '';
       
       if (userData) {
-        // Existing user - load their data
         newXP = userData.xp || 0;
         newQuestionCount = userData.questions_asked || 0;
         message = `Welcome back! You have ${newXP} XP`;
         console.log('👤 [WALLET] Returning user with XP:', newXP);
       } else {
-        // New user - create account with welcome bonus
         newXP = 20;
         newQuestionCount = 0;
         console.log('🆕 [WALLET] New user! Creating account...');
@@ -279,7 +267,6 @@ function App() {
         }
       }
       
-      // Update state
       setWalletAddress(address);
       setWalletConnected(true);
       setWalletType(walletName);
@@ -287,11 +274,9 @@ function App() {
       setQuestionCount(newQuestionCount);
       setShowWalletPrompt(false);
       
-      // Save to localStorage as backup
       localStorage.setItem('smsai_wallet', address);
       localStorage.setItem('smsai_wallet_type', walletName);
       
-      // Show success message
       setConnectionMessage(message);
       setTimeout(() => setConnectionMessage(''), 5000);
       
@@ -321,10 +306,9 @@ function App() {
 
   const handleSubmit = async (promptText = null) => {
     const userMessage = promptText || input.trim();
-    
+
     if (!userMessage || loading) return;
 
-    // Check if needs to connect wallet
     if (!walletConnected && questionCount >= 5) {
       setShowWalletPrompt(true);
       return;
@@ -335,61 +319,107 @@ function App() {
     setInput('');
     setLoading(true);
 
-    // Increment question count
     const newQuestionCount = questionCount + 1;
     setQuestionCount(newQuestionCount);
-    
-    // If wallet connected, increment XP and sync to database
+
     if (walletConnected && walletAddress) {
       const newXP = userXP + 5;
       setUserXP(newXP);
-      
+
       console.log('💎 [XP] Question asked! New XP:', newXP, 'Questions:', newQuestionCount);
-      
-      // Sync to database (don't block the chat on this)
+
       syncUserData(walletAddress, {
         xp: newXP,
-        questions_asked: newQuestionCount
-      }).then(() => {
-        console.log('✅ [XP] Synced to database successfully');
-      }).catch(error => {
-        console.error('❌ [XP] Sync failed:', error);
-        console.warn('⚠️ XP not saved to server. Will retry on next question.');
-      });
+        questions_asked: newQuestionCount,
+      })
+        .then(() => console.log('✅ [XP] Synced to database successfully'))
+        .catch((error) => {
+          console.error('❌ [XP] Sync failed:', error);
+          console.warn('⚠️ XP not saved to server. Will retry on next question.');
+        });
     }
+
+    const assistantMessageIndex = newMessages.length;
+    setMessages([...newMessages, { role: 'assistant', content: '', timestamp: new Date() }]);
 
     try {
       const recentMessages = newMessages.slice(-10);
-      
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: recentMessages.map(m => ({ role: m.role, content: m.content })),
-          wallet_address: walletAddress || null
-        })
+          messages: recentMessages.map((m) => ({ role: m.role, content: m.content })),
+          wallet_address: walletAddress || null,
+        }),
       });
 
-      const data = await response.json();
-      
-      if (!response.ok || data.error) {
-        throw new Error(data.error || 'API request failed');
+      if (!response.ok) {
+        throw new Error('API request failed');
       }
 
-      const content = data.content || "I received your message but couldn't generate a response. Please try again.";
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
 
-      setMessages([...newMessages, { 
-        role: 'assistant', 
-        content: content,
-        timestamp: new Date()
-      }]);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+
+              if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+                fullContent += parsed.delta.text;
+
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  updated[assistantMessageIndex] = {
+                    role: 'assistant',
+                    content: fullContent,
+                    timestamp: new Date(),
+                  };
+                  return updated;
+                });
+              }
+            } catch (e) {
+              // Skip non-JSON lines
+            }
+          }
+        }
+      }
+
+      if (!fullContent) {
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[assistantMessageIndex] = {
+            role: 'assistant',
+            content: "I received your message but couldn't generate a response. Please try again.",
+            timestamp: new Date(),
+          };
+          return updated;
+        });
+      }
     } catch (error) {
       console.error('Chat error:', error);
-      setMessages([...newMessages, { 
-        role: 'assistant', 
-        content: "I apologize, but I'm having trouble connecting right now. Please try again in a moment.",
-        timestamp: new Date()
-      }]);
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[assistantMessageIndex] = {
+          role: 'assistant',
+          content: "I apologize, but I'm having trouble connecting right now. Please try again in a moment.",
+          timestamp: new Date(),
+        };
+        return updated;
+      });
     } finally {
       setLoading(false);
     }
@@ -407,7 +437,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
-      {/* Connection Success Message */}
       {connectionMessage && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
           <div className="bg-green-600/30 backdrop-blur-md text-white px-6 py-3 rounded-full shadow-lg border border-green-400/50 flex items-center gap-3 relative">
@@ -426,11 +455,9 @@ function App() {
         </div>
       )}
 
-      {/* Wallet Connect Prompt Modal */}
       {showWalletPrompt && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 py-8">
           <div className="bg-gradient-to-br from-slate-900 to-purple-900 border border-purple-500/30 rounded-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto relative">
-            {/* Close button */}
             <button
               onClick={() => setShowWalletPrompt(false)}
               className="absolute top-4 right-4 text-purple-300 hover:text-white transition-colors"
@@ -469,58 +496,58 @@ function App() {
                 </div>
               </div>
               
-                <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-purple-500/30"></div>
-                  </div>
-                  <div className="relative flex justify-center text-xs">
-                    <span className="bg-gradient-to-br from-slate-900 to-purple-900 px-3 text-purple-300">
-                      Need to create a wallet? Follow this simple guide
-                    </span>
-                  </div>
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-purple-500/30"></div>
                 </div>
-                
-                <div className="bg-purple-900/30 border border-purple-500/30 rounded-xl p-4">
-                  <h3 className="text-white font-semibold mb-2 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    Create Your First Wallet (2 minutes)
-                  </h3>
-                  <p className="text-sm text-purple-200 mb-3">
-                    New to Solana? Create a free wallet in 2 minutes:
-                  </p>
-                  <ol className="text-sm text-purple-200 space-y-2 mb-3">
-                    <li className="flex gap-2">
-                      <span className="font-bold text-purple-400">1.</span>
-                      <span>Click any wallet above to visit their website</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-bold text-purple-400">2.</span>
-                      <span>Install the browser extension or mobile app</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-bold text-purple-400">3.</span>
-                      <span>Create a new wallet (takes 30 seconds)</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-bold text-purple-400">4.</span>
-                      <span>Save your seed phrase securely (never share it!)</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-bold text-purple-400">5.</span>
-                      <span>Refresh this page and connect</span>
-                    </li>
-                  </ol>
-                  <p className="text-xs text-purple-300/80 italic">
-                    💡 Your wallet is free, requires no personal info, and you don't need any crypto to create it.
-                  </p>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-gradient-to-br from-slate-900 to-purple-900 px-3 text-purple-300">
+                    Need to create a wallet? Follow this simple guide
+                  </span>
                 </div>
-                
-                <button
-                  onClick={() => setShowWalletPrompt(false)}
-                  className="w-full bg-white/10 text-purple-200 rounded-xl px-6 py-3 font-medium hover:bg-white/20 transition-all mt-4"
-                >
-                  Maybe Later
-                </button>
+              </div>
+              
+              <div className="bg-purple-900/30 border border-purple-500/30 rounded-xl p-4">
+                <h3 className="text-white font-semibold mb-2 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Create Your First Wallet (2 minutes)
+                </h3>
+                <p className="text-sm text-purple-200 mb-3">
+                  New to Solana? Create a free wallet in 2 minutes:
+                </p>
+                <ol className="text-sm text-purple-200 space-y-2 mb-3">
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">1.</span>
+                    <span>Click any wallet above to visit their website</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">2.</span>
+                    <span>Install the browser extension or mobile app</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">3.</span>
+                    <span>Create a new wallet (takes 30 seconds)</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">4.</span>
+                    <span>Save your seed phrase securely (never share it!)</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">5.</span>
+                    <span>Refresh this page and connect</span>
+                  </li>
+                </ol>
+                <p className="text-xs text-purple-300/80 italic">
+                  💡 Your wallet is free, requires no personal info, and you don't need any crypto to create it.
+                </p>
+              </div>
+              
+              <button
+                onClick={() => setShowWalletPrompt(false)}
+                className="w-full bg-white/10 text-purple-200 rounded-xl px-6 py-3 font-medium hover:bg-white/20 transition-all mt-4"
+              >
+                Maybe Later
+              </button>
               
               <p className="text-xs text-purple-300/60 mt-4">
                 100% free • No transactions • Just sign-in
@@ -553,7 +580,14 @@ function App() {
             )}
             {smsPrice && (
               <div className="flex items-center gap-2">
-                <span className="text-pink-400 font-semibold text-xs sm:text-sm">SMS</span>
+                
+                  href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-pink-400 font-semibold text-xs sm:text-sm hover:text-pink-300 transition-colors"
+                >
+                  $SMS
+                </a>
                 <span className="text-white font-bold text-xs sm:text-sm">
                   ${smsPrice.price < 0.01 ? smsPrice.price.toFixed(6) : smsPrice.price.toFixed(4)}
                 </span>
@@ -562,7 +596,7 @@ function App() {
                     {smsPrice.change >= 0 ? '↑' : '↓'} {Math.abs(smsPrice.change).toFixed(2)}%
                   </span>
                 )}
-                <a
+                
                   href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -599,7 +633,7 @@ function App() {
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="text-purple-300 text-xs">Socials:</span>
             {socialLinks.map((link) => (
-              <a
+              
                 key={link.name}
                 href={link.url}
                 target="_blank"
@@ -626,7 +660,7 @@ function App() {
             </div>
             <div className="ml-auto flex flex-col items-end gap-2">
               <div className="text-xs text-purple-300">👁️ {sessionCount} visits</div>
-              <a
+              
                 href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -713,7 +747,7 @@ function App() {
                 )}
               </div>
             ))}
-            {loading && (
+            {loading && messages[messages.length - 1]?.content === '' && (
               <div className="flex gap-3">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                   <Sparkles className="w-4 h-4 text-white" />
