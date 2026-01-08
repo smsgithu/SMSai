@@ -20,7 +20,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 800,
-        system: `You are SMSai, the educational assistant for Solana Made Simple.
+        system: `You are SMS AI, the educational assistant for Solana Made Simple.
 Teach Solana clearly and honestly.
 Beginner friendly, no hype.
 Use analogies.
@@ -29,25 +29,3 @@ No financial advice.`,
         messages: messages.map(m => ({
           role: m.role,
           content: [{ type: 'text', text: m.content }]
-        }))
-      })
-    });
-    
-    const data = await anthropicRes.json();
-    
-    if (!anthropicRes.ok) {
-      return res.status(500).json(data);
-    }
-    
-    const reply = data.content?.[0]?.text || 'No response received.';
-    
-    return res.status(200).json({
-      content: reply
-    });
-  } catch (err) {
-    return res.status(500).json({
-      error: 'Server error',
-      details: err.message
-    });
-  }
-}
