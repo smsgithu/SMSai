@@ -445,23 +445,28 @@ function App() {
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4">
                 <Wallet className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-3">Connect Your Wallet</h2>
-              <p className="text-purple-200 mb-6">
-                You've asked 5 questions! Connect your Solana wallet to continue learning for free, track your progress, and earn XP.
+              <h2 className="text-2xl font-bold text-white mb-2">Connect or Create Wallet</h2>
+              <p className="text-purple-200 mb-4">
+                You've explored 5 questions! 🎉 To keep learning about Solana, Web3, and crypto, connect your wallet.
               </p>
-              <p className="text-sm text-purple-300 mb-3">Select your wallet:</p>
+              <p className="text-sm text-purple-300/80 mb-6">
+                It's 100% free, takes 30 seconds, and unlocks unlimited questions + XP rewards.
+              </p>
               
-              <div className="space-y-3 mb-4">
-                {walletOptions.map((wallet) => (
-                  <button
-                    key={wallet.id}
-                    onClick={() => connectWallet(wallet.id)}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-6 py-3 font-semibold hover:from-purple-500 hover:to-pink-500 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Wallet className="w-5 h-5" />
-                    {wallet.name}
-                  </button>
-                ))}
+              <div className="bg-purple-800/30 border border-purple-500/20 rounded-xl p-4 mb-6">
+                <p className="text-sm text-white font-medium mb-3">Already have a wallet? Select it below:</p>
+                <div className="space-y-2">
+                  {walletOptions.map((wallet) => (
+                    <button
+                      key={wallet.id}
+                      onClick={() => connectWallet(wallet.id)}
+                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-6 py-3 font-semibold hover:from-purple-500 hover:to-pink-500 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Wallet className="w-5 h-5" />
+                      {wallet.name}
+                    </button>
+                  ))}
+                </div>
               </div>
               
                 <div className="relative my-6">
@@ -470,7 +475,7 @@ function App() {
                   </div>
                   <div className="relative flex justify-center text-xs">
                     <span className="bg-gradient-to-br from-slate-900 to-purple-900 px-3 text-purple-300">
-                      Don't have a wallet?
+                      Need to create a wallet? Follow this simple guide
                     </span>
                   </div>
                 </div>
@@ -478,7 +483,7 @@ function App() {
                 <div className="bg-purple-900/30 border border-purple-500/30 rounded-xl p-4">
                   <h3 className="text-white font-semibold mb-2 flex items-center gap-2">
                     <Sparkles className="w-4 h-4" />
-                    Create Your First Wallet
+                    Create Your First Wallet (2 minutes)
                   </h3>
                   <p className="text-sm text-purple-200 mb-3">
                     New to Solana? Create a free wallet in 2 minutes:
@@ -547,14 +552,8 @@ function App() {
               </div>
             )}
             {smsPrice && (
-              <a
-                href={`https://jup.ag/swap/SOL-A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 hover:bg-pink-500/10 px-2 py-1 rounded-lg transition-all cursor-pointer group"
-                title="Swap $SMS on Jupiter"
-              >
-                <span className="text-pink-400 font-semibold text-xs sm:text-sm group-hover:text-pink-300">SMS</span>
+              <div className="flex items-center gap-2">
+                <span className="text-pink-400 font-semibold text-xs sm:text-sm">SMS</span>
                 <span className="text-white font-bold text-xs sm:text-sm">
                   ${smsPrice.price < 0.01 ? smsPrice.price.toFixed(6) : smsPrice.price.toFixed(4)}
                 </span>
@@ -563,8 +562,15 @@ function App() {
                     {smsPrice.change >= 0 ? '↑' : '↓'} {Math.abs(smsPrice.change).toFixed(2)}%
                   </span>
                 )}
-                <span className="text-xs text-pink-400/60 group-hover:text-pink-300">↗</span>
-              </a>
+                <a
+                  href="https://jup.ag/swap/SOL-A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-1 bg-gradient-to-r from-pink-600 to-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold hover:from-pink-500 hover:to-purple-500 transition-all"
+                >
+                  Buy
+                </a>
+              </div>
             )}
             {walletConnected ? (
               <div className="flex items-center gap-2 bg-gradient-to-r from-purple-600/30 to-pink-600/30 px-3 py-1.5 rounded-full border border-purple-500/30">
@@ -625,7 +631,7 @@ function App() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 bg-black/40 border border-pink-500/30 px-3 py-1.5 rounded-full hover:border-pink-500/50 hover:bg-black/60 transition-all group"
-                title="Click to swap $SMS on Jupiter"
+                title="Click to swap SOL for $SMS on Jupiter"
               >
                 <span className="text-[10px] text-purple-300">Powered by</span>
                 <img 
@@ -724,11 +730,26 @@ function App() {
 
       <div className="fixed bottom-0 left-0 right-0 bg-black/60 backdrop-blur-md border-t border-purple-500/20 p-4">
         <div className="max-w-3xl mx-auto">
-          {!walletConnected && questionCount > 0 && (
+          {!walletConnected && questionCount > 0 && questionCount < 5 && (
             <div className="mb-2 text-center">
               <span className="inline-block bg-purple-600/30 text-purple-200 text-xs px-3 py-1 rounded-full">
                 {5 - questionCount} free questions remaining
               </span>
+            </div>
+          )}
+          {!walletConnected && questionCount >= 5 && (
+            <div className="mb-3 text-center">
+              <div className="inline-flex flex-col items-center gap-2 bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/30 text-purple-100 text-sm px-4 py-3 rounded-xl">
+                <span>🎉 You've used your 5 free questions!</span>
+                <button
+                  onClick={() => setShowWalletPrompt(true)}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-purple-500 hover:to-pink-500 transition-all flex items-center gap-2"
+                >
+                  <Wallet className="w-4 h-4" />
+                  Connect or Create Wallet to Continue
+                </button>
+                <span className="text-xs text-purple-300">100% free • Unlocks unlimited questions • Earn XP</span>
+              </div>
             </div>
           )}
           <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="flex gap-2">
@@ -746,7 +767,7 @@ function App() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask anything about Solana..."
+              placeholder={!walletConnected && questionCount >= 5 ? "Connect wallet to continue asking questions..." : "Ask anything about Solana..."}
               disabled={loading || (!walletConnected && questionCount >= 5)}
               className="flex-1 bg-white/10 backdrop-blur-md text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-3 rounded-xl"
             />
