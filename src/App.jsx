@@ -547,8 +547,14 @@ function App() {
               </div>
             )}
             {smsPrice && (
-              <div className="flex items-center gap-2">
-                <span className="text-pink-400 font-semibold text-xs sm:text-sm">SMS</span>
+              <a
+                href={`https://jup.ag/swap/SOL-A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 hover:bg-pink-500/10 px-2 py-1 rounded-lg transition-all cursor-pointer group"
+                title="Swap $SMS on Jupiter"
+              >
+                <span className="text-pink-400 font-semibold text-xs sm:text-sm group-hover:text-pink-300">SMS</span>
                 <span className="text-white font-bold text-xs sm:text-sm">
                   ${smsPrice.price < 0.01 ? smsPrice.price.toFixed(6) : smsPrice.price.toFixed(4)}
                 </span>
@@ -557,7 +563,8 @@ function App() {
                     {smsPrice.change >= 0 ? '↑' : '↓'} {Math.abs(smsPrice.change).toFixed(2)}%
                   </span>
                 )}
-              </div>
+                <span className="text-xs text-pink-400/60 group-hover:text-pink-300">↗</span>
+              </a>
             )}
             {walletConnected ? (
               <div className="flex items-center gap-2 bg-gradient-to-r from-purple-600/30 to-pink-600/30 px-3 py-1.5 rounded-full border border-purple-500/30">
@@ -611,8 +618,22 @@ function App() {
               <h1 className="text-2xl font-bold text-white">Solana Made Simple</h1>
               <p className="text-sm text-purple-300">Your AI Guide to the Solana Ecosystem</p>
             </div>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex flex-col items-end gap-2">
               <div className="text-xs text-purple-300">👁️ {sessionCount} visits</div>
+              <a
+                href="https://jup.ag/swap/SOL-A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 bg-black/40 border border-pink-500/30 px-3 py-1.5 rounded-full hover:border-pink-500/50 hover:bg-black/60 transition-all group"
+                title="Click to swap $SMS on Jupiter"
+              >
+                <span className="text-[10px] text-purple-300">Powered by</span>
+                <img 
+                  src="/sms-logo.png" 
+                  alt="$SMS" 
+                  className="h-5 w-auto"
+                />
+              </a>
             </div>
           </div>
 
