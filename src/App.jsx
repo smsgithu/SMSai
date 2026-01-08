@@ -534,7 +534,7 @@ function App() {
             {smsPrice && (
               <div className="flex items-center gap-2">
                 
-                  href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
+                 <a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-pink-400 font-semibold text-xs sm:text-sm hover:text-pink-300 transition-colors"
@@ -550,7 +550,7 @@ function App() {
                   </span>
                 )}
                 
-                  href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
+                  <a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="ml-1 bg-gradient-to-r from-pink-600 to-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold hover:from-pink-500 hover:to-purple-500 transition-all"
@@ -587,7 +587,7 @@ function App() {
             <span className="text-purple-300 text-xs">Socials:</span>
             {socialLinks.map((link) => (
               
-                key={link.name}
+                <a key={link.name}
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -614,7 +614,7 @@ function App() {
             <div className="ml-auto flex flex-col items-end gap-2">
               <div className="text-xs text-purple-300">👁️ {sessionCount} visits</div>
               
-                href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
+                <a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 bg-black/40 border border-pink-500/30 px-3 py-1.5 rounded-full hover:border-pink-500/50 hover:bg-black/60 transition-all group"
