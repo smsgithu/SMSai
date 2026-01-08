@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, BookOpen, Wallet, Coins, TrendingUp, Shield, Sparkles, Home, Youtube, Instagram, Linkedin, Calendar, Video, Eye, LogOut, User } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { Wallet, Sparkles, Send, Home, User, LogOut, Loader2, Twitter, Youtube, Video, Instagram, Linkedin, Calendar } from 'lucide-react';
 
-const SolanaAssistant = () => {
+function App() {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -23,7 +23,6 @@ const SolanaAssistant = () => {
   const [questionCount, setQuestionCount] = useState(0);
   const [showWalletPrompt, setShowWalletPrompt] = useState(false);
   const [connectionMessage, setConnectionMessage] = useState('');
-  const [detectedWallets, setDetectedWallets] = useState([]);
   const messagesEndRef = useRef(null);
   const hasTrackedSession = useRef(false);
 
@@ -36,69 +35,73 @@ const SolanaAssistant = () => {
     { id: 'coinbase', name: 'Coinbase Wallet', window: 'coinbaseSolana', check: (w) => !!w },
   ];
 
-  // Sync user data with backend
+  // API Functions with detailed logging
   const syncUserData = async (walletAddress, updates = {}) => {
     try {
-      console.log('syncUserData called with:', { walletAddress, updates });
+      console.log('🔄 [SYNC] Starting sync for:', walletAddress);
+      console.log('🔄 [SYNC] Updates:', updates);
+      
+      const payload = {
+        wallet_address: walletAddress,
+        wallet_type: updates.wallet_type || walletType || 'unknown',
+        xp: updates.xp !== undefined ? updates.xp : userXP,
+        questions_asked: updates.questions_asked !== undefined ? updates.questions_asked : questionCount
+      };
+      
+      console.log('🔄 [SYNC] Full payload:', payload);
+
       const response = await fetch('/api/user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wallet_address: walletAddress,
-          ...updates
-        })
+        body: JSON.stringify(payload)
       });
 
-      console.log('syncUserData response status:', response.status);
+      console.log('🔄 [SYNC] Response status:', response.status);
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('syncUserData failed:', errorText);
-        throw new Error('Failed to sync user data');
+        console.error('❌ [SYNC] Failed with error:', errorText);
+        throw new Error(`Sync failed: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('syncUserData success:', data);
+      console.log('✅ [SYNC] Success! Returned data:', data);
       return data.user;
     } catch (error) {
-      console.error('Failed to sync user data:', error);
-      return null;
+      console.error('❌ [SYNC] Exception:', error);
+      throw error; // Re-throw so caller knows it failed
     }
   };
 
-  // Load user data from backend
   const loadUserData = async (walletAddress) => {
     try {
-      console.log('loadUserData called for:', walletAddress);
-      const response = await fetch(`/api/user?wallet_address=${walletAddress}`);
+      console.log('📥 [LOAD] Loading data for:', walletAddress);
       
-      console.log('loadUserData response status:', response.status);
+      const response = await fetch(`/api/user?wallet_address=${walletAddress}`);
+      console.log('📥 [LOAD] Response status:', response.status);
       
       if (!response.ok) {
+        if (response.status === 404) {
+          console.log('📥 [LOAD] User not found (new user)');
+          return null;
+        }
         const errorText = await response.text();
-        console.error('loadUserData failed:', errorText);
-        throw new Error('Failed to load user data');
+        console.error('❌ [LOAD] Failed:', errorText);
+        throw new Error(`Load failed: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('loadUserData success:', data);
+      console.log('✅ [LOAD] Success! User data:', data);
       return data.user;
     } catch (error) {
-      console.error('Failed to load user data:', error);
+      console.error('❌ [LOAD] Exception:', error);
       return null;
     }
   };
 
-  const quickPrompts = [
-    { icon: Wallet, text: 'How do wallets work?' },
-    { icon: Shield, text: 'What is a seed phrase?' },
-    { icon: TrendingUp, text: 'Explain DeFi and staking' },
-    { icon: Coins, text: 'How do Solana memecoins work?' }
-  ];
-
   const socialLinks = [
-    { name: '@smsonx', url: 'https://x.com/smsonx', label: '@smsonx', icon: '𝕏' },
-    { name: '@solmadesimple', url: 'https://x.com/solmadesimple', label: '@solmadesimple', icon: '𝕏' },
+    { name: 'X (SMS)', url: 'https://x.com/smsonx', Icon: Twitter, label: '@smsonx' },
+    { name: 'X (SolMadeSimple)', url: 'https://x.com/solmadesimple', Icon: Twitter, label: '@solmadesimple' },
     { name: 'YouTube', url: 'https://www.youtube.com/@SMSONYOUTUBE', Icon: Youtube },
     { name: 'TikTok', url: 'https://www.tiktok.com/@solanamadesimple', Icon: Video, label: 'TikTok' },
     { name: 'Instagram', url: 'https://www.instagram.com/smscrypto', Icon: Instagram },
@@ -131,32 +134,34 @@ const SolanaAssistant = () => {
       // Check if wallet already connected
       const savedWallet = localStorage.getItem('smsai_wallet');
       const savedWalletType = localStorage.getItem('smsai_wallet_type');
-      const savedXP = parseInt(localStorage.getItem('smsai_xp') || '0');
-      const savedQuestions = parseInt(localStorage.getItem('smsai_questions') || '0');
       
       if (savedWallet) {
-        setWalletConnected(true);
-        setWalletAddress(savedWallet);
-        setWalletType(savedWalletType || 'unknown');
-        setUserXP(savedXP);
-        setQuestionCount(savedQuestions);
+        console.log('🔐 [INIT] Found saved wallet, attempting to load data...');
+        // Load from database
+        loadUserData(savedWallet).then(userData => {
+          if (userData) {
+            console.log('🔐 [INIT] Loaded user data from database:', userData);
+            setWalletAddress(savedWallet);
+            setWalletType(savedWalletType || 'unknown');
+            setWalletConnected(true);
+            setUserXP(userData.xp || 0);
+            setQuestionCount(userData.questions_asked || 0);
+          } else {
+            console.log('🔐 [INIT] No user data in database, clearing local storage');
+            // Database has no record, clear localStorage
+            localStorage.removeItem('smsai_wallet');
+            localStorage.removeItem('smsai_wallet_type');
+          }
+        });
       }
-
-      // Detect installed wallets
-      const detected = walletOptions.filter(wallet => {
-        const w = window[wallet.window];
-        return wallet.check(w);
-      });
-      setDetectedWallets(detected.map(w => w.id));
-      console.log('Detected wallets:', detected.map(w => w.name));
     }
   }, []);
 
-  // Fetch crypto prices - 5 minutes
+  // Fetch crypto prices
   useEffect(() => {
     const fetchPrices = async () => {
       try {
-        // Fetch SOL and BTC from CoinGecko (has 24h change)
+        // SOL and BTC from CoinGecko
         const cgResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana,bitcoin&vs_currencies=usd&include_24hr_change=true');
         const cgData = await cgResponse.json();
         
@@ -169,14 +174,13 @@ const SolanaAssistant = () => {
           change: cgData.bitcoin.usd_24h_change
         });
 
-        // Fetch SMS from DexScreener API (free, no API key needed)
+        // SMS from DexScreener
         const smsContract = 'A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS';
         const dexResponse = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${smsContract}`);
         const dexData = await dexResponse.json();
         
-        // DexScreener returns array of pairs, get the one with highest liquidity
         if (dexData.pairs && dexData.pairs.length > 0) {
-          const mainPair = dexData.pairs[0]; // First pair usually has most liquidity
+          const mainPair = dexData.pairs[0];
           setSmsPrice({
             price: parseFloat(mainPair.priceUsd),
             change: parseFloat(mainPair.priceChange?.h24 || 0)
@@ -188,7 +192,7 @@ const SolanaAssistant = () => {
     };
 
     fetchPrices();
-    const interval = setInterval(fetchPrices, 300000); // 5 minutes
+    const interval = setInterval(fetchPrices, 300000);
     return () => clearInterval(interval);
   }, []);
 
@@ -201,106 +205,81 @@ const SolanaAssistant = () => {
       const walletConfig = walletOptions.find(w => w.id === walletName);
       
       if (!walletConfig) {
-        alert('Unknown wallet type. Please select a valid wallet.');
+        alert('Unknown wallet type.');
         return;
       }
 
       const walletObj = window[walletConfig.window];
-      
-      console.log('Attempting to connect:', walletName);
-      console.log('Wallet object exists:', !!walletObj);
+      console.log('🔌 [WALLET] Attempting to connect:', walletName);
 
-      // Check if wallet is installed
       if (!walletObj || !walletConfig.check(walletObj)) {
-        console.log(walletConfig.name, 'not found');
-        
-        // Provide download links based on wallet type
         const downloadUrls = {
           phantom: 'https://phantom.app/',
           solflare: 'https://solflare.com/',
           backpack: 'https://backpack.app/',
-          jupiter: 'https://jup.ag/mobile',
+          jupiter: 'https://jup.ag/',
           glow: 'https://glow.app/',
           coinbase: 'https://www.coinbase.com/wallet'
         };
         
-        const url = downloadUrls[walletName] || 'https://solana.com/ecosystem/explore?categories=wallet';
-        window.open(url, '_blank');
-        
-        alert(`${walletConfig.name} wallet not detected.\n\n1. Install ${walletConfig.name} from the opened page\n2. Refresh this page\n3. Try connecting again\n\nMake sure the extension is enabled in your browser.`);
+        window.open(downloadUrls[walletName] || 'https://solana.com/ecosystem/explore?categories=wallet', '_blank');
+        alert(`${walletConfig.name} not detected.\n\n1. Install from the opened page\n2. Refresh this page\n3. Try again`);
         return;
       }
 
-      console.log('Connecting to', walletConfig.name, '...');
-      
-      // Connect to wallet
+      console.log('🔌 [WALLET] Connecting...');
       const response = await walletObj.connect();
-      console.log('Wallet response:', response);
-      console.log('Wallet object after connect:', walletObj);
       
-      // Different wallets return public keys in different formats
+      // Handle different wallet response formats
       let publicKey;
-      
-      // Special handling for Solflare
       if (walletName === 'solflare') {
-        if (walletObj.publicKey) {
-          console.log('Found publicKey in walletObj.publicKey (Solflare)');
-          publicKey = walletObj.publicKey;
-        } else if (response?.publicKey) {
-          console.log('Found publicKey in response.publicKey (Solflare)');
-          publicKey = response.publicKey;
-        }
-      } 
-      // Standard checks for other wallets
-      else if (response?.publicKey) {
-        console.log('Found publicKey in response.publicKey');
+        publicKey = walletObj.publicKey || response?.publicKey;
+      } else if (response?.publicKey) {
         publicKey = response.publicKey;
-      } else if (response?.solana?.publicKey) {
-        console.log('Found publicKey in response.solana.publicKey');
-        publicKey = response.solana.publicKey;
       } else if (walletObj.publicKey) {
-        console.log('Found publicKey in walletObj.publicKey');
         publicKey = walletObj.publicKey;
+      } else {
+        throw new Error('Could not find public key');
       }
       
-      if (!publicKey) {
-        console.error('Could not find publicKey. Response:', response);
-        console.error('Wallet object:', walletObj);
-        throw new Error('Could not find public key in wallet response');
-      }
+      const address = typeof publicKey === 'string' ? publicKey : publicKey.toString();
+      console.log('✅ [WALLET] Connected:', address);
       
-      // Convert to string - handle both string and object formats
-      const address = typeof publicKey === 'string' 
-        ? publicKey 
-        : publicKey.toString();
-      
-      console.log('Connected successfully:', address);
-      
-      // Load user data from backend
+      // Load user data from database
       const userData = await loadUserData(address);
       
-      let newXP = userXP;
-      let newQuestionCount = questionCount;
+      let newXP = 0;
+      let newQuestionCount = 0;
       let message = '';
       
       if (userData) {
-        // User exists in database - load their data
+        // Existing user - load their data
         newXP = userData.xp || 0;
         newQuestionCount = userData.questions_asked || 0;
         message = `Welcome back! You have ${newXP} XP`;
-        console.log('Loaded user data from backend:', userData);
+        console.log('👤 [WALLET] Returning user with XP:', newXP);
       } else {
-        // New user - award welcome bonus and create account
+        // New user - create account with welcome bonus
         newXP = 20;
-        await syncUserData(address, {
-          wallet_type: walletName,
-          xp: 20,
-          questions_asked: 0
-        });
-        message = 'Wallet connected! +20 XP welcome bonus';
-        console.log('New user created with welcome bonus');
+        newQuestionCount = 0;
+        console.log('🆕 [WALLET] New user! Creating account...');
+        
+        try {
+          await syncUserData(address, {
+            wallet_type: walletName,
+            xp: 20,
+            questions_asked: 0
+          });
+          message = 'Wallet connected! +20 XP welcome bonus';
+          console.log('✅ [WALLET] New user account created');
+        } catch (error) {
+          console.error('❌ [WALLET] Failed to create account:', error);
+          alert('Connected but failed to save to database. You may need to reconnect.');
+          return;
+        }
       }
       
+      // Update state
       setWalletAddress(address);
       setWalletConnected(true);
       setWalletType(walletName);
@@ -308,34 +287,23 @@ const SolanaAssistant = () => {
       setQuestionCount(newQuestionCount);
       setShowWalletPrompt(false);
       
-      setConnectionMessage(message);
-      setTimeout(() => setConnectionMessage(''), 5000);
-      
       // Save to localStorage as backup
       localStorage.setItem('smsai_wallet', address);
       localStorage.setItem('smsai_wallet_type', walletName);
-      localStorage.setItem('smsai_xp', newXP.toString());
-      localStorage.setItem('smsai_questions', newQuestionCount.toString());
+      
+      // Show success message
+      setConnectionMessage(message);
+      setTimeout(() => setConnectionMessage(''), 5000);
       
     } catch (error) {
-      console.error('Wallet connection error:', error);
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        wallet: walletName
-      });
+      console.error('❌ [WALLET] Connection error:', error);
       
-      // Better error messages based on error type
-      if (error.message && error.message.includes('User rejected')) {
-        alert('Connection cancelled. Click the wallet button when ready to connect.');
+      if (error.message?.includes('User rejected')) {
+        alert('Connection cancelled.');
       } else if (error.code === 4001) {
-        alert('Connection request was rejected. Please approve the connection in your wallet.');
-      } else if (error.message && error.message.includes('Already processing')) {
-        alert('Please check your wallet - there may be a pending connection request.');
-      } else if (error.message && error.message.includes('Could not find public key')) {
-        alert('Wallet connected but returned unexpected data format.\n\nPlease try:\n1. Refreshing the page\n2. Disconnecting and reconnecting the wallet\n3. Using a different wallet');
+        alert('Connection rejected. Please approve in your wallet.');
       } else {
-        alert('Wallet connection failed.\n\nPlease try:\n1. Refreshing the page\n2. Unlocking your wallet\n3. Making sure your wallet extension is enabled\n4. Trying a different wallet\n\nError: ' + (error.message || 'Unknown error'));
+        alert(`Connection failed: ${error.message || 'Unknown error'}`);
       }
     }
   };
@@ -345,9 +313,10 @@ const SolanaAssistant = () => {
     setWalletAddress('');
     setWalletType('');
     setUserXP(0);
+    setQuestionCount(0);
     localStorage.removeItem('smsai_wallet');
     localStorage.removeItem('smsai_wallet_type');
-    localStorage.removeItem('smsai_xp');
+    console.log('🔓 [WALLET] Disconnected');
   };
 
   const handleSubmit = async (promptText = null) => {
@@ -355,7 +324,7 @@ const SolanaAssistant = () => {
     
     if (!userMessage || loading) return;
 
-    // Check if user needs to connect wallet
+    // Check if needs to connect wallet
     if (!walletConnected && questionCount >= 5) {
       setShowWalletPrompt(true);
       return;
@@ -366,33 +335,27 @@ const SolanaAssistant = () => {
     setInput('');
     setLoading(true);
 
-    // Increment question count and XP
+    // Increment question count
     const newQuestionCount = questionCount + 1;
     setQuestionCount(newQuestionCount);
-    localStorage.setItem('smsai_questions', newQuestionCount.toString());
     
-    if (walletConnected) {
+    // If wallet connected, increment XP and sync to database
+    if (walletConnected && walletAddress) {
       const newXP = userXP + 5;
       setUserXP(newXP);
-      localStorage.setItem('smsai_xp', newXP.toString());
       
-      // Sync XP with backend - await to ensure it completes
-      try {
-        console.log('Syncing XP to backend:', { xp: newXP, questions: newQuestionCount, wallet: walletAddress });
-        const result = await syncUserData(walletAddress, {
-          xp: newXP,
-          questions_asked: newQuestionCount
-        });
-        if (result) {
-          console.log('XP synced successfully:', result);
-        } else {
-          console.error('XP sync returned null - check API endpoint');
-        }
-      } catch (err) {
-        console.error('Failed to sync XP:', err);
-        // Show user a warning if sync fails
+      console.log('💎 [XP] Question asked! New XP:', newXP, 'Questions:', newQuestionCount);
+      
+      // Sync to database (don't block the chat on this)
+      syncUserData(walletAddress, {
+        xp: newXP,
+        questions_asked: newQuestionCount
+      }).then(() => {
+        console.log('✅ [XP] Synced to database successfully');
+      }).catch(error => {
+        console.error('❌ [XP] Sync failed:', error);
         console.warn('⚠️ XP not saved to server. Will retry on next question.');
-      }
+      });
     }
 
     try {
@@ -400,9 +363,7 @@ const SolanaAssistant = () => {
       
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: recentMessages.map(m => ({ role: m.role, content: m.content })),
           wallet_address: walletAddress || null
@@ -491,7 +452,6 @@ const SolanaAssistant = () => {
               <p className="text-sm text-purple-300 mb-3">Select your wallet:</p>
               
               <div className="space-y-3 mb-4">
-                {/* Show all wallets - no detection */}
                 {walletOptions.map((wallet) => (
                   <button
                     key={wallet.id}
@@ -615,175 +575,164 @@ const SolanaAssistant = () => {
             ) : (
               <button
                 onClick={() => setShowWalletPrompt(true)}
-                className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 px-3 py-1.5 rounded-full text-xs font-semibold text-white transition-all"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold hover:from-purple-500 hover:to-pink-500 transition-all flex items-center gap-2"
               >
                 <Wallet className="w-3.5 h-3.5" />
                 Connect Wallet
               </button>
             )}
           </div>
-          <div className="flex items-center gap-3 flex-wrap justify-center">
-            <span className="text-purple-300 text-xs font-semibold">Socials:</span>
-            {socialLinks.map((link, idx) => (
+          
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="text-purple-300 text-xs">Socials:</span>
+            {socialLinks.map((link) => (
               <a
-                key={idx}
+                key={link.name}
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-purple-300 hover:text-white transition-all hover:scale-110"
-                title={link.name}
+                className="text-purple-300 hover:text-white transition-colors"
+                title={link.label || link.name}
               >
-                {link.Icon ? (
-                  <link.Icon className="w-4 h-4" />
-                ) : link.icon ? (
-                  <span className="text-sm font-bold">{link.icon}</span>
-                ) : null}
-                {link.label && (
-                  <span className="text-xs font-medium">{link.label}</span>
-                )}
+                <link.Icon className="w-3.5 h-3.5" />
               </a>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="bg-black/40 backdrop-blur-lg border-b border-purple-500/30 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+      <div className="flex-1 flex flex-col items-center px-4 pt-8 pb-4 overflow-y-auto">
+        <div className="w-full max-w-3xl">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white">Solana Made Simple</h1>
               <p className="text-sm text-purple-300">Your AI Guide to the Solana Ecosystem</p>
             </div>
-          </div>
-          <div className="hidden sm:flex items-center gap-4">
-            <div className="text-sm text-purple-300/80">
-              <Eye className="w-4 h-4 inline mr-1" />
-              {sessionCount.toLocaleString()} visits
+            <div className="ml-auto flex items-center gap-2">
+              <div className="text-xs text-purple-300">👁️ {sessionCount} visits</div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-6">
-        <div className="max-w-3xl mx-auto space-y-4">
-          {messages.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
-            >
-              <div className={`flex items-end gap-2 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                {msg.role === 'assistant' && (
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 mb-1">
-                    <BookOpen className="w-4 h-4 text-white" />
+          {messages.length === 1 && (
+            <div className="mb-6">
+              <p className="text-sm text-purple-300 mb-3 text-center">Quick start topics:</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  onClick={() => handleSubmit('How do wallets work?')}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-medium hover:from-purple-500 hover:to-pink-500 transition-all text-left flex items-center gap-3"
+                >
+                  <Wallet className="w-5 h-5" />
+                  How do wallets work?
+                </button>
+                <button
+                  onClick={() => handleSubmit('What is a seed phrase?')}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-medium hover:from-purple-500 hover:to-pink-500 transition-all text-left flex items-center gap-3"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  What is a seed phrase?
+                </button>
+                <button
+                  onClick={() => handleSubmit('Explain DeFi and staking')}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-medium hover:from-purple-500 hover:to-pink-500 transition-all text-left flex items-center gap-3"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  Explain DeFi and staking
+                </button>
+                <button
+                  onClick={() => handleSubmit('How do Solana memecoins work?')}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-medium hover:from-purple-500 hover:to-pink-500 transition-all text-left flex items-center gap-3"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  How do Solana memecoins work?
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4 mb-24">
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                {message.role === 'assistant' && (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="w-4 h-4 text-white" />
                   </div>
                 )}
-                <div
-                  className={`rounded-2xl px-4 py-3 ${
-                    msg.role === 'user'
-                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-br-sm'
-                      : 'bg-white/10 backdrop-blur-lg text-white border border-white/20 rounded-bl-sm'
-                  }`}
-                >
-                  <div className="prose prose-invert prose-sm max-w-none">
-                    <ReactMarkdown
-                      components={{
-                        p: ({children}) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
-                        h1: ({children}) => <h1 className="text-lg font-bold mb-2 mt-3 first:mt-0">{children}</h1>,
-                        h2: ({children}) => <h2 className="text-base font-bold mb-2 mt-3 first:mt-0">{children}</h2>,
-                        h3: ({children}) => <h3 className="text-sm font-bold mb-1 mt-2 first:mt-0">{children}</h3>,
-                        ul: ({children}) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
-                        ol: ({children}) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-                        li: ({children}) => <li className="leading-relaxed">{children}</li>,
-                        strong: ({children}) => <strong className="font-semibold text-purple-200">{children}</strong>,
-                        em: ({children}) => <em className="italic text-purple-200">{children}</em>,
-                        code: ({children}) => <code className="bg-black/30 px-1.5 py-0.5 rounded text-xs">{children}</code>,
-                      }}
-                    >
-                      {msg.content}
+                <div className={`max-w-[85%] ${message.role === 'user' ? 'order-1' : ''}`}>
+                  <div
+                    className={`rounded-2xl px-4 py-3 ${
+                      message.role === 'user'
+                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                        : 'bg-white/10 text-white backdrop-blur-sm'
+                    }`}
+                  >
+                    <ReactMarkdown className="prose prose-invert prose-sm max-w-none">
+                      {message.content}
                     </ReactMarkdown>
                   </div>
+                  <div className="text-xs text-purple-300/60 mt-1 px-1">
+                    {formatTime(message.timestamp)}
+                  </div>
+                </div>
+                {message.role === 'user' && (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
+                    <User className="w-4 h-4 text-white" />
+                  </div>
+                )}
+              </div>
+            ))}
+            {loading && (
+              <div className="flex gap-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+                <div className="bg-white/10 rounded-2xl px-4 py-3">
+                  <Loader2 className="w-5 h-5 animate-spin text-purple-300" />
                 </div>
               </div>
-              <span className={`text-xs text-purple-300/60 mt-1 ${msg.role === 'user' ? 'mr-9' : 'ml-9'}`}>
-                {formatTime(msg.timestamp)}
-              </span>
-            </div>
-          ))}
-          
-          {loading && (
-            <div className="flex items-start gap-2">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-                <BookOpen className="w-4 h-4 text-white" />
-              </div>
-              <div className="bg-white/10 backdrop-blur-lg rounded-2xl rounded-bl-sm px-4 py-3 border border-white/20">
-                <Loader2 className="w-5 h-5 text-purple-300 animate-spin" />
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
+            )}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
       </div>
 
-      {messages.length === 1 && (
-        <div className="px-4 pb-4">
-          <div className="max-w-3xl mx-auto">
-            <p className="text-purple-300 text-sm mb-3 text-center">Quick start topics:</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {quickPrompts.map((prompt, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSubmit(prompt.text)}
-                  className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-105 transition-transform duration-200 text-white font-medium shadow-lg"
-                >
-                  <prompt.icon className="w-5 h-5" />
-                  <span className="text-sm">{prompt.text}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="bg-black/40 backdrop-blur-lg border-t border-purple-500/30 px-4 py-4">
+      <div className="fixed bottom-0 left-0 right-0 bg-black/60 backdrop-blur-md border-t border-purple-500/20 p-4">
         <div className="max-w-3xl mx-auto">
-          {!walletConnected && questionCount > 0 && questionCount < 5 && (
-            <div className="text-center mb-3">
-              <span className="text-sm text-purple-300 bg-purple-900/30 px-4 py-2 rounded-full border border-purple-500/30">
-                {5 - questionCount} free {5 - questionCount === 1 ? 'question' : 'questions'} remaining
+          {!walletConnected && questionCount > 0 && (
+            <div className="mb-2 text-center">
+              <span className="inline-block bg-purple-600/30 text-purple-200 text-xs px-3 py-1 rounded-full">
+                {5 - questionCount} free questions remaining
               </span>
             </div>
           )}
-          <div className="flex gap-3">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmit();
-                }
-              }}
-              placeholder="Ask anything about Solana..."
-              disabled={loading}
-              className="flex-1 bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl px-5 py-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
-            />
+          <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="flex gap-2">
             {messages.length > 1 && (
               <button
+                type="button"
                 onClick={resetChat}
-                className="bg-purple-600/50 hover:bg-purple-600 text-white rounded-xl px-4 py-3 font-medium transition-all flex items-center gap-2"
+                className="bg-purple-600/50 hover:bg-purple-600 text-white p-3 rounded-xl transition-all flex items-center gap-2"
                 title="Return to home"
               >
                 <Home className="w-5 h-5" />
               </button>
             )}
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask anything about Solana..."
+              disabled={loading || (!walletConnected && questionCount >= 5)}
+              className="flex-1 bg-white/10 backdrop-blur-md text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-3 rounded-xl"
+            />
             <button
-              onClick={() => handleSubmit()}
-              disabled={loading || !input.trim()}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-6 py-3 font-medium hover:from-purple-500 hover:to-pink-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              type="submit"
+              disabled={loading || !input.trim() || (!walletConnected && questionCount >= 5)}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-500 hover:to-pink-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -791,11 +740,11 @@ const SolanaAssistant = () => {
                 <Send className="w-5 h-5" />
               )}
             </button>
-          </div>
+          </form>
         </div>
       </div>
     </div>
   );
-};
+}
 
-export default SolanaAssistant;
+export default App;
