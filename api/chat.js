@@ -21,11 +21,3 @@ export default async function handler(req, res) {
         model: 'claude-sonnet-4-20250514',
         max_tokens: 800,
         system: `You are SMS AI, the educational assistant for Solana Made Simple.
-Teach Solana clearly and honestly.
-Beginner friendly, no hype.
-Use analogies.
-Warn about scams.
-No financial advice.`,
-        messages: messages.map(m => ({
-          role: m.role,
-          content: [{ type: 'text', text: m.content }]
