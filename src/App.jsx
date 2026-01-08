@@ -35,19 +35,14 @@ function App() {
     { id: 'coinbase', name: 'Coinbase Wallet', window: 'coinbaseSolana', check: (w) => !!w },
   ];
 
-  const syncUserData = async (walletAddress, updates = {}) => {
+  const syncUserData = async (walletAddr, updates = {}) => {
     try {
-      console.log('🔄 [SYNC] Starting sync for:', walletAddress);
-      console.log('🔄 [SYNC] Updates:', updates);
-      
       const payload = {
-        wallet_address: walletAddress,
+        wallet_address: walletAddr,
         wallet_type: updates.wallet_type || walletType || 'unknown',
         xp: updates.xp !== undefined ? updates.xp : userXP,
         questions_asked: updates.questions_asked !== undefined ? updates.questions_asked : questionCount
       };
-      
-      console.log('🔄 [SYNC] Full payload:', payload);
 
       const response = await fetch('/api/user', {
         method: 'POST',
@@ -55,45 +50,31 @@ function App() {
         body: JSON.stringify(payload)
       });
 
-      console.log('🔄 [SYNC] Response status:', response.status);
-      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ [SYNC] Failed with error:', errorText);
         throw new Error(`Sync failed: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('✅ [SYNC] Success! Returned data:', data);
       return data.user;
     } catch (error) {
-      console.error('❌ [SYNC] Exception:', error);
+      console.error('Sync error:', error);
       throw error;
     }
   };
 
-  const loadUserData = async (walletAddress) => {
+  const loadUserData = async (walletAddr) => {
     try {
-      console.log('📥 [LOAD] Loading data for:', walletAddress);
-      
-      const response = await fetch(`/api/user?wallet_address=${walletAddress}`);
-      console.log('📥 [LOAD] Response status:', response.status);
+      const response = await fetch(`/api/user?wallet_address=${walletAddr}`);
       
       if (!response.ok) {
-        if (response.status === 404) {
-          console.log('📥 [LOAD] User not found (new user)');
-          return null;
-        }
-        const errorText = await response.text();
-        console.error('❌ [LOAD] Failed:', errorText);
+        if (response.status === 404) return null;
         throw new Error(`Load failed: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('✅ [LOAD] Success! User data:', data);
       return data.user;
     } catch (error) {
-      console.error('❌ [LOAD] Exception:', error);
+      console.error('Load error:', error);
       return null;
     }
   };
@@ -133,17 +114,14 @@ function App() {
       const savedWalletType = localStorage.getItem('smsai_wallet_type');
       
       if (savedWallet) {
-        console.log('🔐 [INIT] Found saved wallet, attempting to load data...');
         loadUserData(savedWallet).then(userData => {
           if (userData) {
-            console.log('🔐 [INIT] Loaded user data from database:', userData);
             setWalletAddress(savedWallet);
             setWalletType(savedWalletType || 'unknown');
             setWalletConnected(true);
             setUserXP(userData.xp || 0);
             setQuestionCount(userData.questions_asked || 0);
           } else {
-            console.log('🔐 [INIT] No user data in database, clearing local storage');
             localStorage.removeItem('smsai_wallet');
             localStorage.removeItem('smsai_wallet_type');
           }
@@ -202,7 +180,6 @@ function App() {
       }
 
       const walletObj = window[walletConfig.window];
-      console.log('🔌 [WALLET] Attempting to connect:', walletName);
 
       if (!walletObj || !walletConfig.check(walletObj)) {
         const downloadUrls = {
@@ -219,7 +196,6 @@ function App() {
         return;
       }
 
-      console.log('🔌 [WALLET] Connecting...');
       const response = await walletObj.connect();
       
       let publicKey;
@@ -234,7 +210,6 @@ function App() {
       }
       
       const address = typeof publicKey === 'string' ? publicKey : publicKey.toString();
-      console.log('✅ [WALLET] Connected:', address);
       
       const userData = await loadUserData(address);
       
@@ -246,11 +221,9 @@ function App() {
         newXP = userData.xp || 0;
         newQuestionCount = userData.questions_asked || 0;
         message = `Welcome back! You have ${newXP} XP`;
-        console.log('👤 [WALLET] Returning user with XP:', newXP);
       } else {
         newXP = 20;
         newQuestionCount = 0;
-        console.log('🆕 [WALLET] New user! Creating account...');
         
         try {
           await syncUserData(address, {
@@ -259,9 +232,7 @@ function App() {
             questions_asked: 0
           });
           message = 'Wallet connected! +20 XP welcome bonus';
-          console.log('✅ [WALLET] New user account created');
         } catch (error) {
-          console.error('❌ [WALLET] Failed to create account:', error);
           alert('Connected but failed to save to database. You may need to reconnect.');
           return;
         }
@@ -281,8 +252,6 @@ function App() {
       setTimeout(() => setConnectionMessage(''), 5000);
       
     } catch (error) {
-      console.error('❌ [WALLET] Connection error:', error);
-      
       if (error.message?.includes('User rejected')) {
         alert('Connection cancelled.');
       } else if (error.code === 4001) {
@@ -301,7 +270,6 @@ function App() {
     setQuestionCount(0);
     localStorage.removeItem('smsai_wallet');
     localStorage.removeItem('smsai_wallet_type');
-    console.log('🔓 [WALLET] Disconnected');
   };
 
   const handleSubmit = async (promptText = null) => {
@@ -326,17 +294,10 @@ function App() {
       const newXP = userXP + 5;
       setUserXP(newXP);
 
-      console.log('💎 [XP] Question asked! New XP:', newXP, 'Questions:', newQuestionCount);
-
       syncUserData(walletAddress, {
         xp: newXP,
         questions_asked: newQuestionCount,
-      })
-        .then(() => console.log('✅ [XP] Synced to database successfully'))
-        .catch((error) => {
-          console.error('❌ [XP] Sync failed:', error);
-          console.warn('⚠️ XP not saved to server. Will retry on next question.');
-        });
+      }).catch(() => {});
     }
 
     const assistantMessageIndex = newMessages.length;
@@ -372,15 +333,12 @@ function App() {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6);
-
             if (data === '[DONE]') continue;
 
             try {
               const parsed = JSON.parse(data);
-
               if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
                 fullContent += parsed.delta.text;
-
                 setMessages((prev) => {
                   const updated = [...prev];
                   updated[assistantMessageIndex] = {
@@ -391,9 +349,7 @@ function App() {
                   return updated;
                 });
               }
-            } catch (e) {
-              // Skip non-JSON lines
-            }
+            } catch (e) {}
           }
         }
       }
@@ -410,7 +366,6 @@ function App() {
         });
       }
     } catch (error) {
-      console.error('Chat error:', error);
       setMessages((prev) => {
         const updated = [...prev];
         updated[assistantMessageIndex] = {
@@ -445,7 +400,6 @@ function App() {
             <button
               onClick={() => setConnectionMessage('')}
               className="ml-2 text-white/80 hover:text-white transition-colors"
-              aria-label="Close"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -461,7 +415,6 @@ function App() {
             <button
               onClick={() => setShowWalletPrompt(false)}
               className="absolute top-4 right-4 text-purple-300 hover:text-white transition-colors"
-              aria-label="Close"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -579,33 +532,33 @@ function App() {
               </div>
             )}
             {smsPrice && (
-  <div className="flex items-center gap-2">
-    
-      href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-pink-400 font-semibold text-xs sm:text-sm hover:text-pink-300 transition-colors"
-    >
-      $SMS
-    </a>
-    <span className="text-white font-bold text-xs sm:text-sm">
-      ${smsPrice.price < 0.01 ? smsPrice.price.toFixed(6) : smsPrice.price.toFixed(4)}
-    </span>
-    {smsPrice.change !== 0 && (
-      <span className={`text-xs ${smsPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-        {smsPrice.change >= 0 ? '↑' : '↓'} {Math.abs(smsPrice.change).toFixed(2)}%
-      </span>
-    )}
-    
-      href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="ml-1 bg-gradient-to-r from-pink-600 to-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold hover:from-pink-500 hover:to-purple-500 transition-all"
-    >
-      Buy
-    </a>
-  </div>
-)}
+              <div className="flex items-center gap-2">
+                
+                  href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-pink-400 font-semibold text-xs sm:text-sm hover:text-pink-300 transition-colors"
+                >
+                  $SMS
+                </a>
+                <span className="text-white font-bold text-xs sm:text-sm">
+                  ${smsPrice.price < 0.01 ? smsPrice.price.toFixed(6) : smsPrice.price.toFixed(4)}
+                </span>
+                {smsPrice.change !== 0 && (
+                  <span className={`text-xs ${smsPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {smsPrice.change >= 0 ? '↑' : '↓'} {Math.abs(smsPrice.change).toFixed(2)}%
+                  </span>
+                )}
+                
+                  href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-1 bg-gradient-to-r from-pink-600 to-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold hover:from-pink-500 hover:to-purple-500 transition-all"
+                >
+                  Buy
+                </a>
+              </div>
+            )}
             {walletConnected ? (
               <div className="flex items-center gap-2 bg-gradient-to-r from-purple-600/30 to-pink-600/30 px-3 py-1.5 rounded-full border border-purple-500/30">
                 <User className="w-3.5 h-3.5 text-purple-300" />
