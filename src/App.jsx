@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Wallet, Sparkles, Send, Home, User, LogOut, Loader2, Twitter, Youtube, Video, Instagram, Linkedin, Calendar, ChevronDown, ExternalLink } from 'lucide-react';
+import { Wallet, Sparkles, Send, Home, User, LogOut, Loader2, Twitter, Youtube, Video, Instagram, Linkedin, Calendar, ChevronDown, ExternalLink, MessageSquare, Plus, Trash2, Gift } from 'lucide-react';
 
 function App() {
   const [messages, setMessages] = useState([
@@ -25,6 +25,9 @@ function App() {
   const [connectionMessage, setConnectionMessage] = useState('');
   const [showWalletMenu, setShowWalletMenu] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [savedChats, setSavedChats] = useState([]);
+  const [currentChatId, setCurrentChatId] = useState(null);
+  const [showChatHistory, setShowChatHistory] = useState(false);
   const messagesEndRef = useRef(null);
   const hasTrackedSession = useRef(false);
 
@@ -104,6 +107,74 @@ function App() {
     }
   };
 
+  // Chat history functions
+  const loadChats = async (walletAddr) => {
+    try {
+      const response = await fetch(`/api/chats?wallet_address=${walletAddr}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSavedChats(data.chats || []);
+      }
+    } catch (error) {
+      console.error('Failed to load chats:', error);
+    }
+  };
+
+  const saveCurrentChat = async () => {
+    if (!walletConnected || messages.length <= 1) return;
+    
+    const title = messages.find(m => m.role === 'user')?.content.slice(0, 50) || 'New Chat';
+    
+    try {
+      const response = await fetch('/api/chats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wallet_address: walletAddress,
+          chat_id: currentChatId,
+          title: title + (title.length >= 50 ? '...' : ''),
+          messages: messages
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentChatId(data.chat_id);
+        loadChats(walletAddress);
+      }
+    } catch (error) {
+      console.error('Failed to save chat:', error);
+    }
+  };
+
+  const loadChat = (chat) => {
+    setMessages(chat.messages.map(m => ({ ...m, timestamp: new Date(m.timestamp) })));
+    setCurrentChatId(chat.id);
+    setShowChatHistory(false);
+  };
+
+  const deleteChat = async (chatId, e) => {
+    e.stopPropagation();
+    try {
+      await fetch(`/api/chats?chat_id=${chatId}&wallet_address=${walletAddress}`, { method: 'DELETE' });
+      setSavedChats(savedChats.filter(c => c.id !== chatId));
+      if (currentChatId === chatId) {
+        resetChat();
+      }
+    } catch (error) {
+      console.error('Failed to delete chat:', error);
+    }
+  };
+
+  const startNewChat = () => {
+    if (walletConnected && messages.length > 1) {
+      saveCurrentChat();
+    }
+    setCurrentChatId(null);
+    resetChat();
+    setShowChatHistory(false);
+  };
+
   const socialLinks = [
     { name: 'X', url: 'https://x.com/smsonx', Icon: Twitter, label: '@smsonx' },
     { name: 'X', url: 'https://x.com/solmadesimple', Icon: Twitter, label: '@SMS' },
@@ -129,17 +200,14 @@ function App() {
       // Track global visit count
       const trackVisit = async () => {
         try {
-          // Check if this session already counted (to avoid double-counting on refreshes)
           const alreadyCounted = sessionStorage.getItem('smsai_visit_counted');
           
           if (!alreadyCounted) {
-            // Increment and get new count
             const response = await fetch('/api/visits', { method: 'POST' });
             const data = await response.json();
             setSessionCount(data.count);
             sessionStorage.setItem('smsai_visit_counted', 'true');
           } else {
-            // Just fetch current count without incrementing
             const response = await fetch('/api/visits');
             const data = await response.json();
             setSessionCount(data.count);
@@ -162,6 +230,7 @@ function App() {
             setWalletConnected(true);
             setUserXP(userData.xp || 0);
             setQuestionCount(userData.questions_asked || 0);
+            loadChats(savedWallet);
           } else {
             localStorage.removeItem('smsai_wallet');
             localStorage.removeItem('smsai_wallet_type');
@@ -198,6 +267,14 @@ function App() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Auto-save chat when messages change (for wallet users)
+  useEffect(() => {
+    if (walletConnected && messages.length > 1) {
+      const timeout = setTimeout(() => saveCurrentChat(), 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [messages, walletConnected]);
 
   const connectWallet = async (walletName) => {
     try {
@@ -260,6 +337,7 @@ function App() {
       localStorage.setItem('smsai_wallet_type', walletName);
       setConnectionMessage(message);
       setTimeout(() => setConnectionMessage(''), 5000);
+      loadChats(address);
     } catch (error) {
       if (error.message?.includes('User rejected')) alert('Connection cancelled.');
       else if (error.code === 4001) alert('Connection rejected. Please approve in your wallet.');
@@ -268,12 +346,15 @@ function App() {
   };
 
   const disconnectWallet = () => {
+    if (messages.length > 1) saveCurrentChat();
     setWalletConnected(false);
     setWalletAddress('');
     setWalletType('');
     setUserXP(0);
     setQuestionCount(0);
     setShowWalletMenu(false);
+    setSavedChats([]);
+    setCurrentChatId(null);
     localStorage.removeItem('smsai_wallet');
     localStorage.removeItem('smsai_wallet_type');
   };
@@ -340,6 +421,45 @@ function App() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Chat History Sidebar */}
+      {showChatHistory && walletConnected && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex">
+          <div className="bg-gradient-to-br from-slate-900 to-purple-900 w-72 max-w-[80vw] h-full border-r border-purple-500/30 p-4 overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-bold">Chat History</h3>
+              <button onClick={() => setShowChatHistory(false)} className="text-purple-300 hover:text-white">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            
+            <button onClick={startNewChat} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg px-3 py-2 font-semibold text-sm flex items-center justify-center gap-2 mb-4">
+              <Plus className="w-4 h-4" /> New Chat
+            </button>
+            
+            {savedChats.length === 0 ? (
+              <p className="text-purple-300 text-sm text-center">No saved chats yet</p>
+            ) : (
+              <div className="space-y-2">
+                {savedChats.map((chat) => (
+                  <div key={chat.id} onClick={() => loadChat(chat)} className={`p-3 rounded-lg cursor-pointer group ${currentChatId === chat.id ? 'bg-purple-600/30 border border-purple-500/50' : 'bg-white/5 hover:bg-white/10'}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm truncate">{chat.title}</p>
+                        <p className="text-purple-300 text-xs">{new Date(chat.updated_at).toLocaleDateString()}</p>
+                      </div>
+                      <button onClick={(e) => deleteChat(chat.id, e)} className="text-purple-300 hover:text-red-400 opacity-0 group-hover:opacity-100">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex-1" onClick={() => setShowChatHistory(false)} />
         </div>
       )}
 
@@ -438,10 +558,20 @@ function App() {
       {/* Header */}
       <div className="bg-black/60 backdrop-blur-md border-b border-purple-500/20 px-3 py-2">
         <div className="max-w-6xl mx-auto">
+          {/* Bounty Banner */}
+          <div className="flex justify-center mb-1.5">
+            <div className="bg-gradient-to-r from-yellow-600/20 via-orange-600/20 to-yellow-600/20 border border-yellow-500/40 rounded-full px-3 py-1 animate-pulse">
+              <p className="text-[9px] sm:text-xs text-yellow-300 text-center flex items-center gap-1.5">
+                <Gift className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span><span className="font-bold">USDC Bounties Coming</span> • Holders Only • Community Rewards 🎁</span>
+              </p>
+            </div>
+          </div>
+          
           <div className="flex justify-center items-center gap-2 sm:gap-6 mb-1.5 overflow-x-auto">
             {solPrice && (
               <div className="flex items-center gap-1 flex-shrink-0">
-                <span className="text-purple-300 font-semibold text-[10px] sm:text-xs">SOL</span>
+                <span className="text-purple-300 font-semibold text-[10px] sm:text-xs">$SOL</span>
                 <span className="text-white font-bold text-[10px] sm:text-xs">${solPrice.price.toFixed(2)}</span>
                 <span className={`text-[9px] sm:text-[10px] ${solPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {solPrice.change >= 0 ? '↑' : '↓'}{Math.abs(solPrice.change).toFixed(1)}%
@@ -450,7 +580,7 @@ function App() {
             )}
             {btcPrice && (
               <div className="flex items-center gap-1 flex-shrink-0">
-                <span className="text-orange-300 font-semibold text-[10px] sm:text-xs">BTC</span>
+                <span className="text-orange-300 font-semibold text-[10px] sm:text-xs">$BTC</span>
                 <span className="text-white font-bold text-[10px] sm:text-xs">${(btcPrice.price / 1000).toFixed(1)}k</span>
                 <span className={`text-[9px] sm:text-[10px] ${btcPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {btcPrice.change >= 0 ? '↑' : '↓'}{Math.abs(btcPrice.change).toFixed(1)}%
@@ -481,6 +611,11 @@ function App() {
           {/* Mobile Layout */}
           <div className="block sm:hidden mb-3">
             <div className="flex items-center gap-2 mb-2">
+              {walletConnected && (
+                <button onClick={() => setShowChatHistory(true)} className="p-1.5 bg-purple-600/30 rounded-lg border border-purple-500/30">
+                  <MessageSquare className="w-4 h-4 text-purple-300" />
+                </button>
+              )}
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
@@ -509,10 +644,10 @@ function App() {
                 </a>
                 <span className="text-[9px] text-purple-300">👁️ {sessionCount}</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 overflow-x-auto">
                 {socialLinks.map((link) => (
                   <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="text-purple-300 hover:text-white">
-                    <link.Icon className="w-3 h-3" />
+                    <link.Icon className="w-3.5 h-3.5" />
                   </a>
                 ))}
               </div>
@@ -532,6 +667,11 @@ function App() {
           <div className="hidden sm:block">
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-3">
+                {walletConnected && (
+                  <button onClick={() => setShowChatHistory(true)} className="p-2 bg-purple-600/30 rounded-xl border border-purple-500/30 hover:bg-purple-600/50" title="Chat History">
+                    <MessageSquare className="w-5 h-5 text-purple-300" />
+                  </button>
+                )}
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
@@ -662,7 +802,7 @@ function App() {
           )}
           <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="flex gap-1.5 sm:gap-2">
             {messages.length > 1 && (
-              <button type="button" onClick={resetChat} className="bg-purple-600/50 hover:bg-purple-600 text-white p-2 sm:p-3 rounded-lg sm:rounded-xl" title="Reset">
+              <button type="button" onClick={startNewChat} className="bg-purple-600/50 hover:bg-purple-600 text-white p-2 sm:p-3 rounded-lg sm:rounded-xl" title="New Chat">
                 <Home className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             )}
