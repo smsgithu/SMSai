@@ -125,10 +125,31 @@ function App() {
   useEffect(() => {
     if (!hasTrackedSession.current) {
       hasTrackedSession.current = true;
-      const currentCount = parseInt(localStorage.getItem('smsai_sessions') || '0');
-      const newCount = currentCount + 1;
-      localStorage.setItem('smsai_sessions', newCount.toString());
-      setSessionCount(newCount);
+      
+      // Track global visit count
+      const trackVisit = async () => {
+        try {
+          // Check if this session already counted (to avoid double-counting on refreshes)
+          const alreadyCounted = sessionStorage.getItem('smsai_visit_counted');
+          
+          if (!alreadyCounted) {
+            // Increment and get new count
+            const response = await fetch('/api/visits', { method: 'POST' });
+            const data = await response.json();
+            setSessionCount(data.count);
+            sessionStorage.setItem('smsai_visit_counted', 'true');
+          } else {
+            // Just fetch current count without incrementing
+            const response = await fetch('/api/visits');
+            const data = await response.json();
+            setSessionCount(data.count);
+          }
+        } catch (error) {
+          console.error('Failed to track visit:', error);
+          setSessionCount(0);
+        }
+      };
+      trackVisit();
 
       const savedWallet = localStorage.getItem('smsai_wallet');
       const savedWalletType = localStorage.getItem('smsai_wallet_type');
@@ -488,10 +509,10 @@ function App() {
                 </a>
                 <span className="text-[9px] text-purple-300">👁️ {sessionCount}</span>
               </div>
-              <div className="flex items-center gap-2 overflow-x-auto">
-                {socialLinks.slice(0, 5).map((link) => (
+              <div className="flex items-center gap-2">
+                {socialLinks.map((link) => (
                   <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="text-purple-300 hover:text-white">
-                    <link.Icon className="w-3.5 h-3.5" />
+                    <link.Icon className="w-3 h-3" />
                   </a>
                 ))}
               </div>
