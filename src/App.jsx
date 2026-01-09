@@ -522,8 +522,8 @@ function App() {
 
       <div className="flex-1 flex flex-col items-center px-4 pt-6 pb-4 overflow-y-auto">
         <div className="w-full max-w-4xl">
-          {/* Main Header with Logo, Title, and Right Sidebar */}
-          <div className="flex items-start gap-4 mb-6">
+          {/* Main Header Row - Title on left, Socials on right */}
+          <div className="flex items-start justify-between mb-2">
             {/* Left side - Logo and Title */}
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
@@ -535,12 +535,28 @@ function App() {
               </div>
             </div>
             
-            {/* Right side - Stacked: Visits, Powered by, Socials, Wallet */}
-            <div className="ml-auto flex flex-col items-end gap-3">
-              {/* Visit counter */}
-              <div className="text-xs text-purple-300">👁️ {sessionCount} visits</div>
-              
-              {/* Powered by badge */}
+            {/* Right side - Socials row */}
+            <div className="flex items-center gap-3">
+              {socialLinks.map((link) => (
+                <a
+                  key={link.url}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-0.5 text-purple-300 hover:text-white transition-colors group"
+                  title={link.label}
+                >
+                  <link.Icon className="w-4 h-4" />
+                  <span className="text-[9px] group-hover:text-white">{link.label}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+          
+          {/* Second Row - Powered by & Visits on left, Wallet on right */}
+          <div className="flex items-center justify-between mb-6">
+            {/* Left side - Powered by and visits */}
+            <div className="flex items-center gap-4">
               <a
                 href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
                 target="_blank"
@@ -551,63 +567,47 @@ function App() {
                 <span className="text-[10px] text-purple-300">Powered by</span>
                 <img src="/sms.png" alt="$SMS" className="h-5 w-auto" />
               </a>
-              
-              {/* Social Links with Labels */}
-              <div className="flex flex-wrap justify-end gap-3">
-                {socialLinks.map((link) => (
-                  <a
-                    key={link.url}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex flex-col items-center gap-0.5 text-purple-300 hover:text-white transition-colors group"
-                    title={link.label}
-                  >
-                    <link.Icon className="w-4 h-4" />
-                    <span className="text-[9px] group-hover:text-white">{link.label}</span>
-                  </a>
-                ))}
-              </div>
-              
-              {/* Wallet Section */}
-              <div className="relative">
-                {walletConnected ? (
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowWalletMenu(!showWalletMenu)}
-                      className="flex items-center gap-2 bg-gradient-to-r from-purple-600/30 to-pink-600/30 px-3 py-2 rounded-xl border border-purple-500/30 hover:border-purple-500/50 transition-all"
-                    >
-                      <User className="w-4 h-4 text-purple-300" />
-                      <div className="text-left">
-                        <div className="text-xs text-white font-medium">{shortenAddress(walletAddress)}</div>
-                        <div className="text-[10px] text-purple-300">{userXP} XP • {questionCount} questions</div>
-                      </div>
-                      <ChevronDown className="w-4 h-4 text-purple-300" />
-                    </button>
-                    
-                    {/* Dropdown Menu */}
-                    {showWalletMenu && (
-                      <div className="absolute right-0 top-full mt-2 bg-slate-900 border border-purple-500/30 rounded-xl shadow-lg overflow-hidden z-50 min-w-[160px]">
-                        <button
-                          onClick={disconnectWallet}
-                          className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Disconnect
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
+              <div className="text-xs text-purple-300">👁️ {sessionCount} visits</div>
+            </div>
+            
+            {/* Right side - Wallet */}
+            <div className="relative">
+              {walletConnected ? (
+                <div className="relative">
                   <button
-                    onClick={() => setShowWalletPrompt(true)}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:from-purple-500 hover:to-pink-500 transition-all flex items-center gap-2"
+                    onClick={() => setShowWalletMenu(!showWalletMenu)}
+                    className="flex items-center gap-2 bg-gradient-to-r from-purple-600/30 to-pink-600/30 px-3 py-2 rounded-xl border border-purple-500/30 hover:border-purple-500/50 transition-all"
                   >
-                    <Wallet className="w-4 h-4" />
-                    Connect Wallet
+                    <User className="w-4 h-4 text-purple-300" />
+                    <div className="text-left">
+                      <div className="text-xs text-white font-medium">{shortenAddress(walletAddress)}</div>
+                      <div className="text-[10px] text-purple-300">{userXP} XP • {questionCount} questions</div>
+                    </div>
+                    <ChevronDown className="w-4 h-4 text-purple-300" />
                   </button>
-                )}
-              </div>
+                  
+                  {/* Dropdown Menu */}
+                  {showWalletMenu && (
+                    <div className="absolute right-0 top-full mt-2 bg-slate-900 border border-purple-500/30 rounded-xl shadow-lg overflow-hidden z-50 min-w-[160px]">
+                      <button
+                        onClick={disconnectWallet}
+                        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Disconnect
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowWalletPrompt(true)}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:from-purple-500 hover:to-pink-500 transition-all flex items-center gap-2"
+                >
+                  <Wallet className="w-4 h-4" />
+                  Connect Wallet
+                </button>
+              )}
             </div>
           </div>
 
