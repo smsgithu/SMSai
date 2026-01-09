@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Wallet, Sparkles, Send, Home, User, LogOut, Loader2, Twitter, Youtube, Video, Instagram, Linkedin, Calendar } from 'lucide-react';
+import { Wallet, Sparkles, Send, Home, User, LogOut, Loader2, Twitter, Youtube, Video, Instagram, Linkedin, Calendar, ChevronDown } from 'lucide-react';
 
 function App() {
   const [messages, setMessages] = useState([
@@ -23,6 +23,7 @@ function App() {
   const [questionCount, setQuestionCount] = useState(0);
   const [showWalletPrompt, setShowWalletPrompt] = useState(false);
   const [connectionMessage, setConnectionMessage] = useState('');
+  const [showWalletMenu, setShowWalletMenu] = useState(false);
   const messagesEndRef = useRef(null);
   const hasTrackedSession = useRef(false);
 
@@ -35,20 +36,14 @@ function App() {
     { id: 'coinbase', name: 'Coinbase Wallet', window: 'coinbaseSolana', check: (w) => !!w },
   ];
 
-  // API Functions with detailed logging
-  const syncUserData = async (walletAddress, updates = {}) => {
+  const syncUserData = async (walletAddr, updates = {}) => {
     try {
-      console.log('🔄 [SYNC] Starting sync for:', walletAddress);
-      console.log('🔄 [SYNC] Updates:', updates);
-      
       const payload = {
-        wallet_address: walletAddress,
+        wallet_address: walletAddr,
         wallet_type: updates.wallet_type || walletType || 'unknown',
         xp: updates.xp !== undefined ? updates.xp : userXP,
         questions_asked: updates.questions_asked !== undefined ? updates.questions_asked : questionCount
       };
-      
-      console.log('🔄 [SYNC] Full payload:', payload);
 
       const response = await fetch('/api/user', {
         method: 'POST',
@@ -56,57 +51,43 @@ function App() {
         body: JSON.stringify(payload)
       });
 
-      console.log('🔄 [SYNC] Response status:', response.status);
-      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ [SYNC] Failed with error:', errorText);
         throw new Error(`Sync failed: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('✅ [SYNC] Success! Returned data:', data);
       return data.user;
     } catch (error) {
-      console.error('❌ [SYNC] Exception:', error);
-      throw error; // Re-throw so caller knows it failed
+      console.error('Sync error:', error);
+      throw error;
     }
   };
 
-  const loadUserData = async (walletAddress) => {
+  const loadUserData = async (walletAddr) => {
     try {
-      console.log('📥 [LOAD] Loading data for:', walletAddress);
-      
-      const response = await fetch(`/api/user?wallet_address=${walletAddress}`);
-      console.log('📥 [LOAD] Response status:', response.status);
+      const response = await fetch(`/api/user?wallet_address=${walletAddr}`);
       
       if (!response.ok) {
-        if (response.status === 404) {
-          console.log('📥 [LOAD] User not found (new user)');
-          return null;
-        }
-        const errorText = await response.text();
-        console.error('❌ [LOAD] Failed:', errorText);
+        if (response.status === 404) return null;
         throw new Error(`Load failed: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('✅ [LOAD] Success! User data:', data);
       return data.user;
     } catch (error) {
-      console.error('❌ [LOAD] Exception:', error);
+      console.error('Load error:', error);
       return null;
     }
   };
 
   const socialLinks = [
-    { name: 'X (SMS)', url: 'https://x.com/smsonx', Icon: Twitter, label: '@smsonx' },
-    { name: 'X (SolMadeSimple)', url: 'https://x.com/solmadesimple', Icon: Twitter, label: '@solmadesimple' },
-    { name: 'YouTube', url: 'https://www.youtube.com/@SMSONYOUTUBE', Icon: Youtube },
+    { name: 'X', url: 'https://x.com/smsonx', Icon: Twitter, label: '@smsonx' },
+    { name: 'X', url: 'https://x.com/solmadesimple', Icon: Twitter, label: '@SMS' },
+    { name: 'YouTube', url: 'https://www.youtube.com/@SMSONYOUTUBE', Icon: Youtube, label: 'YouTube' },
     { name: 'TikTok', url: 'https://www.tiktok.com/@solanamadesimple', Icon: Video, label: 'TikTok' },
-    { name: 'Instagram', url: 'https://www.instagram.com/smscrypto', Icon: Instagram },
-    { name: 'LinkedIn', url: 'https://www.linkedin.com/in/sean-suvie-77a35018b/', Icon: Linkedin },
-    { name: 'Book a Call', url: 'https://calendly.com/seanmsuvie/30min', Icon: Calendar, label: 'Book a Call' }
+    { name: 'Instagram', url: 'https://www.instagram.com/smscrypto', Icon: Instagram, label: 'Insta' },
+    { name: 'LinkedIn', url: 'https://www.linkedin.com/in/sean-suvie-77a35018b/', Icon: Linkedin, label: 'LinkedIn' },
+    { name: 'Book Call', url: 'https://calendly.com/seanmsuvie/30min', Icon: Calendar, label: 'Book' }
   ];
 
   const formatTime = (date) => {
@@ -121,7 +102,6 @@ function App() {
     return `${address.slice(0, 4)}...${address.slice(-4)}`;
   };
 
-  // Track page views
   useEffect(() => {
     if (!hasTrackedSession.current) {
       hasTrackedSession.current = true;
@@ -131,24 +111,18 @@ function App() {
       localStorage.setItem('smsai_sessions', newCount.toString());
       setSessionCount(newCount);
 
-      // Check if wallet already connected
       const savedWallet = localStorage.getItem('smsai_wallet');
       const savedWalletType = localStorage.getItem('smsai_wallet_type');
       
       if (savedWallet) {
-        console.log('🔐 [INIT] Found saved wallet, attempting to load data...');
-        // Load from database
         loadUserData(savedWallet).then(userData => {
           if (userData) {
-            console.log('🔐 [INIT] Loaded user data from database:', userData);
             setWalletAddress(savedWallet);
             setWalletType(savedWalletType || 'unknown');
             setWalletConnected(true);
             setUserXP(userData.xp || 0);
             setQuestionCount(userData.questions_asked || 0);
           } else {
-            console.log('🔐 [INIT] No user data in database, clearing local storage');
-            // Database has no record, clear localStorage
             localStorage.removeItem('smsai_wallet');
             localStorage.removeItem('smsai_wallet_type');
           }
@@ -157,11 +131,9 @@ function App() {
     }
   }, []);
 
-  // Fetch crypto prices
   useEffect(() => {
     const fetchPrices = async () => {
       try {
-        // SOL and BTC from CoinGecko
         const cgResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana,bitcoin&vs_currencies=usd&include_24hr_change=true');
         const cgData = await cgResponse.json();
         
@@ -174,7 +146,6 @@ function App() {
           change: cgData.bitcoin.usd_24h_change
         });
 
-        // SMS from DexScreener
         const smsContract = 'A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS';
         const dexResponse = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${smsContract}`);
         const dexData = await dexResponse.json();
@@ -210,7 +181,6 @@ function App() {
       }
 
       const walletObj = window[walletConfig.window];
-      console.log('🔌 [WALLET] Attempting to connect:', walletName);
 
       if (!walletObj || !walletConfig.check(walletObj)) {
         const downloadUrls = {
@@ -227,10 +197,8 @@ function App() {
         return;
       }
 
-      console.log('🔌 [WALLET] Connecting...');
       const response = await walletObj.connect();
       
-      // Handle different wallet response formats
       let publicKey;
       if (walletName === 'solflare') {
         publicKey = walletObj.publicKey || response?.publicKey;
@@ -243,9 +211,7 @@ function App() {
       }
       
       const address = typeof publicKey === 'string' ? publicKey : publicKey.toString();
-      console.log('✅ [WALLET] Connected:', address);
       
-      // Load user data from database
       const userData = await loadUserData(address);
       
       let newXP = 0;
@@ -253,16 +219,12 @@ function App() {
       let message = '';
       
       if (userData) {
-        // Existing user - load their data
         newXP = userData.xp || 0;
         newQuestionCount = userData.questions_asked || 0;
         message = `Welcome back! You have ${newXP} XP`;
-        console.log('👤 [WALLET] Returning user with XP:', newXP);
       } else {
-        // New user - create account with welcome bonus
         newXP = 20;
         newQuestionCount = 0;
-        console.log('🆕 [WALLET] New user! Creating account...');
         
         try {
           await syncUserData(address, {
@@ -271,33 +233,27 @@ function App() {
             questions_asked: 0
           });
           message = 'Wallet connected! +20 XP welcome bonus';
-          console.log('✅ [WALLET] New user account created');
         } catch (error) {
-          console.error('❌ [WALLET] Failed to create account:', error);
           alert('Connected but failed to save to database. You may need to reconnect.');
           return;
         }
       }
       
-      // Update state
       setWalletAddress(address);
       setWalletConnected(true);
       setWalletType(walletName);
       setUserXP(newXP);
       setQuestionCount(newQuestionCount);
       setShowWalletPrompt(false);
+      setShowWalletMenu(false);
       
-      // Save to localStorage as backup
       localStorage.setItem('smsai_wallet', address);
       localStorage.setItem('smsai_wallet_type', walletName);
       
-      // Show success message
       setConnectionMessage(message);
       setTimeout(() => setConnectionMessage(''), 5000);
       
     } catch (error) {
-      console.error('❌ [WALLET] Connection error:', error);
-      
       if (error.message?.includes('User rejected')) {
         alert('Connection cancelled.');
       } else if (error.code === 4001) {
@@ -314,17 +270,16 @@ function App() {
     setWalletType('');
     setUserXP(0);
     setQuestionCount(0);
+    setShowWalletMenu(false);
     localStorage.removeItem('smsai_wallet');
     localStorage.removeItem('smsai_wallet_type');
-    console.log('🔓 [WALLET] Disconnected');
   };
 
   const handleSubmit = async (promptText = null) => {
     const userMessage = promptText || input.trim();
-    
+
     if (!userMessage || loading) return;
 
-    // Check if needs to connect wallet
     if (!walletConnected && questionCount >= 5) {
       setShowWalletPrompt(true);
       return;
@@ -335,58 +290,48 @@ function App() {
     setInput('');
     setLoading(true);
 
-    // Increment question count
     const newQuestionCount = questionCount + 1;
     setQuestionCount(newQuestionCount);
-    
-    // If wallet connected, increment XP and sync to database
+
     if (walletConnected && walletAddress) {
       const newXP = userXP + 5;
       setUserXP(newXP);
-      
-      console.log('💎 [XP] Question asked! New XP:', newXP, 'Questions:', newQuestionCount);
-      
-      // Sync to database (don't block the chat on this)
+
       syncUserData(walletAddress, {
         xp: newXP,
-        questions_asked: newQuestionCount
-      }).then(() => {
-        console.log('✅ [XP] Synced to database successfully');
-      }).catch(error => {
-        console.error('❌ [XP] Sync failed:', error);
-        console.warn('⚠️ XP not saved to server. Will retry on next question.');
-      });
+        questions_asked: newQuestionCount,
+      }).catch(() => {});
     }
 
     try {
       const recentMessages = newMessages.slice(-10);
-      
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: recentMessages.map(m => ({ role: m.role, content: m.content })),
-          wallet_address: walletAddress || null
-        })
+          messages: recentMessages.map((m) => ({ role: m.role, content: m.content })),
+          wallet_address: walletAddress || null,
+        }),
       });
 
       const data = await response.json();
-      
+
       if (!response.ok || data.error) {
         throw new Error(data.error || 'API request failed');
       }
 
       const content = data.content || "I received your message but couldn't generate a response. Please try again.";
 
-      setMessages([...newMessages, { 
-        role: 'assistant', 
+      setMessages([...newMessages, {
+        role: 'assistant',
         content: content,
         timestamp: new Date()
       }]);
     } catch (error) {
       console.error('Chat error:', error);
-      setMessages([...newMessages, { 
-        role: 'assistant', 
+      setMessages([...newMessages, {
+        role: 'assistant',
         content: "I apologize, but I'm having trouble connecting right now. Please try again in a moment.",
         timestamp: new Date()
       }]);
@@ -407,7 +352,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
-      {/* Connection Success Message */}
       {connectionMessage && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
           <div className="bg-green-600/30 backdrop-blur-md text-white px-6 py-3 rounded-full shadow-lg border border-green-400/50 flex items-center gap-3 relative">
@@ -416,7 +360,6 @@ function App() {
             <button
               onClick={() => setConnectionMessage('')}
               className="ml-2 text-white/80 hover:text-white transition-colors"
-              aria-label="Close"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -426,15 +369,12 @@ function App() {
         </div>
       )}
 
-      {/* Wallet Connect Prompt Modal */}
       {showWalletPrompt && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 py-8">
           <div className="bg-gradient-to-br from-slate-900 to-purple-900 border border-purple-500/30 rounded-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto relative">
-            {/* Close button */}
             <button
               onClick={() => setShowWalletPrompt(false)}
               className="absolute top-4 right-4 text-purple-300 hover:text-white transition-colors"
-              aria-label="Close"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -469,58 +409,58 @@ function App() {
                 </div>
               </div>
               
-                <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-purple-500/30"></div>
-                  </div>
-                  <div className="relative flex justify-center text-xs">
-                    <span className="bg-gradient-to-br from-slate-900 to-purple-900 px-3 text-purple-300">
-                      Need to create a wallet? Follow this simple guide
-                    </span>
-                  </div>
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-purple-500/30"></div>
                 </div>
-                
-                <div className="bg-purple-900/30 border border-purple-500/30 rounded-xl p-4">
-                  <h3 className="text-white font-semibold mb-2 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    Create Your First Wallet (2 minutes)
-                  </h3>
-                  <p className="text-sm text-purple-200 mb-3">
-                    New to Solana? Create a free wallet in 2 minutes:
-                  </p>
-                  <ol className="text-sm text-purple-200 space-y-2 mb-3">
-                    <li className="flex gap-2">
-                      <span className="font-bold text-purple-400">1.</span>
-                      <span>Click any wallet above to visit their website</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-bold text-purple-400">2.</span>
-                      <span>Install the browser extension or mobile app</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-bold text-purple-400">3.</span>
-                      <span>Create a new wallet (takes 30 seconds)</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-bold text-purple-400">4.</span>
-                      <span>Save your seed phrase securely (never share it!)</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-bold text-purple-400">5.</span>
-                      <span>Refresh this page and connect</span>
-                    </li>
-                  </ol>
-                  <p className="text-xs text-purple-300/80 italic">
-                    💡 Your wallet is free, requires no personal info, and you don't need any crypto to create it.
-                  </p>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-gradient-to-br from-slate-900 to-purple-900 px-3 text-purple-300">
+                    Need to create a wallet? Follow this simple guide
+                  </span>
                 </div>
-                
-                <button
-                  onClick={() => setShowWalletPrompt(false)}
-                  className="w-full bg-white/10 text-purple-200 rounded-xl px-6 py-3 font-medium hover:bg-white/20 transition-all mt-4"
-                >
-                  Maybe Later
-                </button>
+              </div>
+              
+              <div className="bg-purple-900/30 border border-purple-500/30 rounded-xl p-4">
+                <h3 className="text-white font-semibold mb-2 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Create Your First Wallet (2 minutes)
+                </h3>
+                <p className="text-sm text-purple-200 mb-3">
+                  New to Solana? Create a free wallet in 2 minutes:
+                </p>
+                <ol className="text-sm text-purple-200 space-y-2 mb-3">
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">1.</span>
+                    <span>Click any wallet above to visit their website</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">2.</span>
+                    <span>Install the browser extension or mobile app</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">3.</span>
+                    <span>Create a new wallet (takes 30 seconds)</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">4.</span>
+                    <span>Save your seed phrase securely (never share it!)</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">5.</span>
+                    <span>Refresh this page and connect</span>
+                  </li>
+                </ol>
+                <p className="text-xs text-purple-300/80 italic">
+                  💡 Your wallet is free, requires no personal info, and you don't need any crypto to create it.
+                </p>
+              </div>
+              
+              <button
+                onClick={() => setShowWalletPrompt(false)}
+                className="w-full bg-white/10 text-purple-200 rounded-xl px-6 py-3 font-medium hover:bg-white/20 transition-all mt-4"
+              >
+                Maybe Later
+              </button>
               
               <p className="text-xs text-purple-300/60 mt-4">
                 100% free • No transactions • Just sign-in
@@ -530,9 +470,11 @@ function App() {
         </div>
       )}
 
-      <div className="bg-black/60 backdrop-blur-md border-b border-purple-500/20 px-4 py-2.5">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-4 sm:gap-6">
+      {/* Header with centered tickers */}
+      <div className="bg-black/60 backdrop-blur-md border-b border-purple-500/20 px-4 py-3">
+        <div className="max-w-6xl mx-auto">
+          {/* Price Tickers - Centered */}
+          <div className="flex justify-center items-center gap-6 mb-2">
             {solPrice && (
               <div className="flex items-center gap-2">
                 <span className="text-purple-300 font-semibold text-xs sm:text-sm">SOL</span>
@@ -553,7 +495,7 @@ function App() {
             )}
             {smsPrice && (
               <div className="flex items-center gap-2">
-                <span className="text-pink-400 font-semibold text-xs sm:text-sm">SMS</span>
+                <a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS" target="_blank" rel="noopener noreferrer" className="text-pink-400 font-semibold text-xs sm:text-sm hover:text-pink-300 transition-colors">$SMS</a>
                 <span className="text-white font-bold text-xs sm:text-sm">
                   ${smsPrice.price < 0.01 ? smsPrice.price.toFixed(6) : smsPrice.price.toFixed(4)}
                 </span>
@@ -562,70 +504,43 @@ function App() {
                     {smsPrice.change >= 0 ? '↑' : '↓'} {Math.abs(smsPrice.change).toFixed(2)}%
                   </span>
                 )}
-                <a
-                  href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-1 bg-gradient-to-r from-pink-600 to-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold hover:from-pink-500 hover:to-purple-500 transition-all"
-                >
-                  Buy
-                </a>
+                <a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS" target="_blank" rel="noopener noreferrer" className="ml-1 bg-gradient-to-r from-pink-600 to-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold hover:from-pink-500 hover:to-purple-500 transition-all">Buy</a>
               </div>
-            )}
-            {walletConnected ? (
-              <div className="flex items-center gap-2 bg-gradient-to-r from-purple-600/30 to-pink-600/30 px-3 py-1.5 rounded-full border border-purple-500/30">
-                <User className="w-3.5 h-3.5 text-purple-300" />
-                <span className="text-xs text-white font-medium">{shortenAddress(walletAddress)}</span>
-                <span className="text-xs text-purple-300">• {userXP} XP</span>
-                <button
-                  onClick={disconnectWallet}
-                  className="ml-1 text-purple-300 hover:text-white transition-colors"
-                  title="Disconnect"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowWalletPrompt(true)}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold hover:from-purple-500 hover:to-pink-500 transition-all flex items-center gap-2"
-              >
-                <Wallet className="w-3.5 h-3.5" />
-                Connect Wallet
-              </button>
             )}
           </div>
           
-          <div className="flex items-center gap-2 sm:gap-3">
-            <span className="text-purple-300 text-xs">Socials:</span>
-            {socialLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-purple-300 hover:text-white transition-colors"
-                title={link.label || link.name}
-              >
-                <link.Icon className="w-3.5 h-3.5" />
-              </a>
-            ))}
+          {/* Free to use banner */}
+          <div className="flex justify-center">
+            <div className="bg-gradient-to-r from-green-600/20 to-emerald-600/20 border border-green-500/30 rounded-full px-4 py-1.5">
+              <p className="text-xs sm:text-sm text-green-300 text-center">
+                ✨ <span className="font-semibold">100% Free to use</span> • Start with 5 questions • Connect a wallet for unlimited access & XP rewards
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col items-center px-4 pt-8 pb-4 overflow-y-auto">
-        <div className="w-full max-w-3xl">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
+      <div className="flex-1 flex flex-col items-center px-4 pt-6 pb-4 overflow-y-auto">
+        <div className="w-full max-w-4xl">
+          {/* Main Header with Logo, Title, and Right Sidebar */}
+          <div className="flex items-start gap-4 mb-6">
+            {/* Left side - Logo and Title */}
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">Solana Made Simple</h1>
+                <p className="text-sm text-purple-300">Your AI Guide to the Solana Ecosystem</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">Solana Made Simple</h1>
-              <p className="text-sm text-purple-300">Your AI Guide to the Solana Ecosystem</p>
-            </div>
-            <div className="ml-auto flex flex-col items-end gap-2">
+            
+            {/* Right side - Stacked: Visits, Powered by, Socials, Wallet */}
+            <div className="ml-auto flex flex-col items-end gap-3">
+              {/* Visit counter */}
               <div className="text-xs text-purple-300">👁️ {sessionCount} visits</div>
+              
+              {/* Powered by badge */}
               <a
                 href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS"
                 target="_blank"
@@ -634,19 +549,72 @@ function App() {
                 title="View $SMS on Jupiter"
               >
                 <span className="text-[10px] text-purple-300">Powered by</span>
-                <img 
-                  src="/sms.png" 
-                  alt="$SMS" 
-                  className="h-5 w-auto"
-                />
+                <img src="/sms.png" alt="$SMS" className="h-5 w-auto" />
               </a>
+              
+              {/* Social Links with Labels */}
+              <div className="flex flex-wrap justify-end gap-3">
+                {socialLinks.map((link) => (
+                  <a
+                    key={link.url}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center gap-0.5 text-purple-300 hover:text-white transition-colors group"
+                    title={link.label}
+                  >
+                    <link.Icon className="w-4 h-4" />
+                    <span className="text-[9px] group-hover:text-white">{link.label}</span>
+                  </a>
+                ))}
+              </div>
+              
+              {/* Wallet Section */}
+              <div className="relative">
+                {walletConnected ? (
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowWalletMenu(!showWalletMenu)}
+                      className="flex items-center gap-2 bg-gradient-to-r from-purple-600/30 to-pink-600/30 px-3 py-2 rounded-xl border border-purple-500/30 hover:border-purple-500/50 transition-all"
+                    >
+                      <User className="w-4 h-4 text-purple-300" />
+                      <div className="text-left">
+                        <div className="text-xs text-white font-medium">{shortenAddress(walletAddress)}</div>
+                        <div className="text-[10px] text-purple-300">{userXP} XP • {questionCount} questions</div>
+                      </div>
+                      <ChevronDown className="w-4 h-4 text-purple-300" />
+                    </button>
+                    
+                    {/* Dropdown Menu */}
+                    {showWalletMenu && (
+                      <div className="absolute right-0 top-full mt-2 bg-slate-900 border border-purple-500/30 rounded-xl shadow-lg overflow-hidden z-50 min-w-[160px]">
+                        <button
+                          onClick={disconnectWallet}
+                          className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Disconnect
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowWalletPrompt(true)}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:from-purple-500 hover:to-pink-500 transition-all flex items-center gap-2"
+                  >
+                    <Wallet className="w-4 h-4" />
+                    Connect Wallet
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
           {messages.length === 1 && (
             <div className="mb-6">
               <p className="text-sm text-purple-300 mb-3 text-center">Quick start topics:</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
                 <button
                   onClick={() => handleSubmit('How do wallets work?')}
                   className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-medium hover:from-purple-500 hover:to-pink-500 transition-all text-left flex items-center gap-3"
@@ -679,7 +647,7 @@ function App() {
             </div>
           )}
 
-          <div className="space-y-4 mb-24">
+          <div className="space-y-4 mb-24 max-w-2xl mx-auto">
             {messages.map((message, index) => (
               <div
                 key={index}
@@ -729,7 +697,7 @@ function App() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 bg-black/60 backdrop-blur-md border-t border-purple-500/20 p-4">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-2xl mx-auto">
           {!walletConnected && questionCount > 0 && questionCount < 5 && (
             <div className="mb-2 text-center">
               <span className="inline-block bg-purple-600/30 text-purple-200 text-xs px-3 py-1 rounded-full">
