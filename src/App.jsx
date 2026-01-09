@@ -332,8 +332,13 @@ function App() {
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-3">
                 <Wallet className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-lg font-bold text-white mb-2">Connect Wallet</h2>
-              <p className="text-purple-200 text-sm mb-3">Connect a wallet to continue learning for free!</p>
+              <h2 className="text-lg font-bold text-white mb-2">Connect or Create Wallet</h2>
+              <p className="text-purple-200 text-sm mb-2">
+                You've explored 5 questions! 🎉 To keep learning about Solana, Web3, and crypto, connect your wallet.
+              </p>
+              <p className="text-xs text-purple-300/80 mb-4">
+                It's 100% free, takes 30 seconds, and unlocks unlimited questions + XP rewards.
+              </p>
               
               {isMobile && !isInWalletBrowser() && (
                 <div className="bg-blue-600/20 border border-blue-500/30 rounded-lg p-2 mb-3">
@@ -341,24 +346,69 @@ function App() {
                 </div>
               )}
               
-              <div className="space-y-2 mb-4">
-                {walletOptions.map((wallet) => (
-                  <button key={wallet.id} onClick={() => connectWallet(wallet.id)} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-4 py-2.5 font-semibold hover:from-purple-500 hover:to-pink-500 flex items-center justify-center gap-2 text-sm">
-                    <Wallet className="w-4 h-4" />
-                    {wallet.name}
-                    {isMobile && !isInWalletBrowser() && <ExternalLink className="w-3 h-3 opacity-60" />}
-                  </button>
-                ))}
+              <div className="bg-purple-800/30 border border-purple-500/20 rounded-xl p-3 mb-4">
+                <p className="text-xs text-white font-medium mb-2">Already have a wallet? Select it below:</p>
+                <div className="space-y-2">
+                  {walletOptions.map((wallet) => (
+                    <button key={wallet.id} onClick={() => connectWallet(wallet.id)} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-4 py-2.5 font-semibold hover:from-purple-500 hover:to-pink-500 flex items-center justify-center gap-2 text-sm">
+                      <Wallet className="w-4 h-4" />
+                      {wallet.name}
+                      {isMobile && !isInWalletBrowser() && <ExternalLink className="w-3 h-3 opacity-60" />}
+                    </button>
+                  ))}
+                </div>
               </div>
               
-              <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-3 mb-3">
-                <p className="text-xs text-purple-200 mb-1 font-medium">New to crypto?</p>
-                <p className="text-[10px] text-purple-300">Tap any wallet above → Download the app → Create wallet → Return here</p>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-purple-500/30"></div>
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-gradient-to-br from-slate-900 to-purple-900 px-2 text-purple-300">
+                    Need to create a wallet?
+                  </span>
+                </div>
+              </div>
+              
+              <div className="bg-purple-900/30 border border-purple-500/30 rounded-xl p-3 mb-3">
+                <h3 className="text-white font-semibold text-sm mb-2 flex items-center justify-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Create Your First Wallet (2 min)
+                </h3>
+                <ol className="text-xs text-purple-200 space-y-1.5 text-left">
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">1.</span>
+                    <span>Tap any wallet above to visit their website</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">2.</span>
+                    <span>Install the browser extension or mobile app</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">3.</span>
+                    <span>Create a new wallet (takes 30 seconds)</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">4.</span>
+                    <span>Save your seed phrase securely (never share it!)</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">5.</span>
+                    <span>Return here and connect</span>
+                  </li>
+                </ol>
+                <p className="text-[10px] text-purple-300/80 italic mt-2">
+                  💡 Your wallet is free, requires no personal info, and you don't need any crypto to create it.
+                </p>
               </div>
               
               <button onClick={() => setShowWalletPrompt(false)} className="w-full bg-white/10 text-purple-200 rounded-xl px-4 py-2 font-medium hover:bg-white/20 text-sm">
                 Maybe Later
               </button>
+              
+              <p className="text-[10px] text-purple-300/60 mt-3">
+                100% free • No transactions • Just sign-in
+              </p>
             </div>
           </div>
         </div>
@@ -390,6 +440,9 @@ function App() {
               <div className="flex items-center gap-1 flex-shrink-0">
                 <a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS" target="_blank" rel="noopener noreferrer" className="text-pink-400 font-semibold text-[10px] sm:text-xs hover:text-pink-300">$SMS</a>
                 <span className="text-white font-bold text-[10px] sm:text-xs">${smsPrice.price < 0.01 ? smsPrice.price.toFixed(6) : smsPrice.price.toFixed(4)}</span>
+                <span className={`text-[9px] sm:text-[10px] ${smsPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {smsPrice.change >= 0 ? '↑' : '↓'}{Math.abs(smsPrice.change).toFixed(1)}%
+                </span>
                 <a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS" target="_blank" rel="noopener noreferrer" className="bg-gradient-to-r from-pink-600 to-purple-600 text-white text-[8px] px-1.5 py-0.5 rounded-full font-semibold">Buy</a>
               </div>
             )}
