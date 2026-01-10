@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Wallet, Sparkles, Send, Home, User, LogOut, Loader2, Twitter, Youtube, Video, Instagram, Linkedin, Calendar, ChevronDown, ExternalLink, MessageSquare, Plus, Trash2, Gift, TrendingUp, Newspaper, Play, X, DollarSign, BarChart3 } from 'lucide-react';
+import { Wallet, Sparkles, Send, Home, User, LogOut, Loader2, Twitter, Youtube, Video, Instagram, Linkedin, Calendar, ChevronDown, ExternalLink, MessageSquare, Plus, Trash2, Gift } from 'lucide-react';
 
 function App() {
   const [messages, setMessages] = useState([
@@ -28,22 +28,8 @@ function App() {
   const [savedChats, setSavedChats] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(null);
   const [showChatHistory, setShowChatHistory] = useState(false);
-  
-  // New state for DeFi, News, and Content
-  const [defiData, setDefiData] = useState(null);
-  const [newsData, setNewsData] = useState(null);
-  const [showInfoPanel, setShowInfoPanel] = useState(false);
-  const [activeTab, setActiveTab] = useState('news'); // 'news', 'defi', 'content'
-  
   const messagesEndRef = useRef(null);
   const hasTrackedSession = useRef(false);
-
-  // Your YouTube video IDs - UPDATE THESE with your actual video IDs
-  const youtubeVideos = [
-    { id: 'YOUR_VIDEO_ID_1', title: 'Getting Started with Solana' },
-    { id: 'YOUR_VIDEO_ID_2', title: 'How to Stake SOL' },
-    { id: 'YOUR_VIDEO_ID_3', title: 'DeFi on Solana Explained' },
-  ];
 
   useEffect(() => {
     const checkMobile = () => {
@@ -53,42 +39,6 @@ function App() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Fetch DeFi data
-  useEffect(() => {
-    const fetchDefiData = async () => {
-      try {
-        const response = await fetch('/api/defi');
-        if (response.ok) {
-          const data = await response.json();
-          setDefiData(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch DeFi data:', error);
-      }
-    };
-    fetchDefiData();
-    const interval = setInterval(fetchDefiData, 300000); // Refresh every 5 mins
-    return () => clearInterval(interval);
-  }, []);
-
-  // Fetch News data
-  useEffect(() => {
-    const fetchNewsData = async () => {
-      try {
-        const response = await fetch('/api/news');
-        if (response.ok) {
-          const data = await response.json();
-          setNewsData(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch news:', error);
-      }
-    };
-    fetchNewsData();
-    const interval = setInterval(fetchNewsData, 900000); // Refresh every 15 mins
-    return () => clearInterval(interval);
   }, []);
 
   const walletOptions = [
@@ -158,10 +108,9 @@ function App() {
   };
 
   // Chat history functions
-  const loadChats = async () => {
-    if (!walletAddress) return;
+  const loadChats = async (walletAddr) => {
     try {
-      const response = await fetch(`/api/chats?wallet_address=${walletAddress}`);
+      const response = await fetch(`/api/chats?wallet_address=${walletAddr}`);
       if (response.ok) {
         const data = await response.json();
         setSavedChats(data.chats || []);
@@ -171,24 +120,27 @@ function App() {
     }
   };
 
-  const saveChat = async () => {
-    if (!walletAddress || messages.length <= 1) return;
+  const saveCurrentChat = async () => {
+    if (!walletConnected || messages.length <= 1) return;
+    
+    const title = messages.find(m => m.role === 'user')?.content.slice(0, 50) || 'New Chat';
+    
     try {
-      const title = messages[1]?.content?.substring(0, 50) + '...' || 'New Chat';
       const response = await fetch('/api/chats', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           wallet_address: walletAddress,
           chat_id: currentChatId,
-          title,
-          messages: messages.map(m => ({ role: m.role, content: m.content, timestamp: m.timestamp }))
+          title: title + (title.length >= 50 ? '...' : ''),
+          messages: messages
         })
       });
+      
       if (response.ok) {
         const data = await response.json();
-        setCurrentChatId(data.chat.id);
-        loadChats();
+        setCurrentChatId(data.chat_id);
+        loadChats(walletAddress);
       }
     } catch (error) {
       console.error('Failed to save chat:', error);
@@ -204,8 +156,8 @@ function App() {
   const deleteChat = async (chatId, e) => {
     e.stopPropagation();
     try {
-      await fetch(`/api/chats?id=${chatId}`, { method: 'DELETE' });
-      loadChats();
+      await fetch(`/api/chats?chat_id=${chatId}&wallet_address=${walletAddress}`, { method: 'DELETE' });
+      setSavedChats(savedChats.filter(c => c.id !== chatId));
       if (currentChatId === chatId) {
         resetChat();
       }
@@ -215,25 +167,13 @@ function App() {
   };
 
   const startNewChat = () => {
-    resetChat();
+    if (walletConnected && messages.length > 1) {
+      saveCurrentChat();
+    }
     setCurrentChatId(null);
+    resetChat();
     setShowChatHistory(false);
   };
-
-  // Auto-save chat
-  useEffect(() => {
-    if (walletConnected && messages.length > 1) {
-      const timer = setTimeout(() => saveChat(), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [messages, walletConnected]);
-
-  // Load chats when wallet connects
-  useEffect(() => {
-    if (walletConnected && walletAddress) {
-      loadChats();
-    }
-  }, [walletConnected, walletAddress]);
 
   const socialLinks = [
     { name: 'X', url: 'https://x.com/smsonx', Icon: Twitter, label: '@smsonx' },
@@ -253,28 +193,31 @@ function App() {
 
   const isInWalletBrowser = () => !!(window.solana?.isPhantom || window.solflare || window.backpack);
 
-  const formatTVL = (tvl) => {
-    if (tvl >= 1e9) return `$${(tvl / 1e9).toFixed(2)}B`;
-    if (tvl >= 1e6) return `$${(tvl / 1e6).toFixed(2)}M`;
-    if (tvl >= 1e3) return `$${(tvl / 1e3).toFixed(2)}K`;
-    return `$${tvl.toFixed(2)}`;
-  };
-
   useEffect(() => {
     if (!hasTrackedSession.current) {
       hasTrackedSession.current = true;
       
-      // Track visit in database
-      fetch('/api/visits', { method: 'POST' })
-        .then(res => res.json())
-        .then(data => setSessionCount(data.count || 0))
-        .catch(() => {});
-
-      // Also fetch current count
-      fetch('/api/visits')
-        .then(res => res.json())
-        .then(data => setSessionCount(data.count || 0))
-        .catch(() => {});
+      // Track global visit count
+      const trackVisit = async () => {
+        try {
+          const alreadyCounted = sessionStorage.getItem('smsai_visit_counted');
+          
+          if (!alreadyCounted) {
+            const response = await fetch('/api/visits', { method: 'POST' });
+            const data = await response.json();
+            setSessionCount(data.count);
+            sessionStorage.setItem('smsai_visit_counted', 'true');
+          } else {
+            const response = await fetch('/api/visits');
+            const data = await response.json();
+            setSessionCount(data.count);
+          }
+        } catch (error) {
+          console.error('Failed to track visit:', error);
+          setSessionCount(0);
+        }
+      };
+      trackVisit();
 
       const savedWallet = localStorage.getItem('smsai_wallet');
       const savedWalletType = localStorage.getItem('smsai_wallet_type');
@@ -287,6 +230,7 @@ function App() {
             setWalletConnected(true);
             setUserXP(userData.xp || 0);
             setQuestionCount(userData.questions_asked || 0);
+            loadChats(savedWallet);
           } else {
             localStorage.removeItem('smsai_wallet');
             localStorage.removeItem('smsai_wallet_type');
@@ -323,6 +267,14 @@ function App() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Auto-save chat when messages change (for wallet users)
+  useEffect(() => {
+    if (walletConnected && messages.length > 1) {
+      const timeout = setTimeout(() => saveCurrentChat(), 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [messages, walletConnected]);
 
   const connectWallet = async (walletName) => {
     try {
@@ -385,6 +337,7 @@ function App() {
       localStorage.setItem('smsai_wallet_type', walletName);
       setConnectionMessage(message);
       setTimeout(() => setConnectionMessage(''), 5000);
+      loadChats(address);
     } catch (error) {
       if (error.message?.includes('User rejected')) alert('Connection cancelled.');
       else if (error.code === 4001) alert('Connection rejected. Please approve in your wallet.');
@@ -393,6 +346,7 @@ function App() {
   };
 
   const disconnectWallet = () => {
+    if (messages.length > 1) saveCurrentChat();
     setWalletConnected(false);
     setWalletAddress('');
     setWalletType('');
@@ -456,230 +410,6 @@ function App() {
     setMessages([{ role: 'assistant', content: "👋 🌟 Welcome to SMSai\n\nYour AI guide to the Solana ecosystem. We break things down simply—from wallets and seed phrases to staking, DeFi, RWAs, memecoins, and how Solana actually works under the hood.\n\nAsk me anything about Solana.", timestamp: new Date() }]);
   };
 
-  // Info Panel Component (News, DeFi, Content)
-  const InfoPanel = () => (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-gradient-to-br from-slate-900 to-purple-900 border border-purple-500/30 rounded-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-purple-500/30">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab('news')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'news' ? 'bg-purple-600 text-white' : 'text-purple-300 hover:bg-purple-600/30'}`}
-            >
-              <Newspaper className="w-4 h-4 inline mr-2" />News
-            </button>
-            <button
-              onClick={() => setActiveTab('defi')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'defi' ? 'bg-purple-600 text-white' : 'text-purple-300 hover:bg-purple-600/30'}`}
-            >
-              <BarChart3 className="w-4 h-4 inline mr-2" />DeFi
-            </button>
-            <button
-              onClick={() => setActiveTab('content')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'content' ? 'bg-purple-600 text-white' : 'text-purple-300 hover:bg-purple-600/30'}`}
-            >
-              <Play className="w-4 h-4 inline mr-2" />Content
-            </button>
-          </div>
-          <button onClick={() => setShowInfoPanel(false)} className="text-purple-300 hover:text-white">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-4 overflow-y-auto max-h-[calc(85vh-80px)]">
-          {/* News Tab */}
-          {activeTab === 'news' && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-white mb-4">📰 Latest Crypto News</h3>
-              
-              {newsData?.news?.length > 0 ? (
-                <div className="grid gap-3">
-                  {newsData.news.map((item, i) => (
-                    <a
-                      key={i}
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block bg-white/5 hover:bg-white/10 border border-purple-500/20 rounded-xl p-4 transition-all"
-                    >
-                      <div className="flex items-start gap-3">
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${item.currency === 'BTC' ? 'bg-orange-500/20 text-orange-300' : 'bg-purple-500/20 text-purple-300'}`}>
-                          {item.currency}
-                        </span>
-                        <div className="flex-1">
-                          <h4 className="text-white font-medium text-sm leading-tight">{item.title}</h4>
-                          <p className="text-purple-300/60 text-xs mt-1">{item.source}</p>
-                        </div>
-                        <ExternalLink className="w-4 h-4 text-purple-400 flex-shrink-0" />
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-purple-300 text-center py-8">Loading news...</p>
-              )}
-
-              {newsData?.trending?.length > 0 && (
-                <div className="mt-6">
-                  <h4 className="text-md font-bold text-white mb-3">🔥 Trending</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {newsData.trending.map((coin, i) => (
-                      <div key={i} className="flex items-center gap-2 bg-white/5 border border-purple-500/20 rounded-full px-3 py-1.5">
-                        {coin.thumb && <img src={coin.thumb} alt={coin.symbol} className="w-5 h-5 rounded-full" />}
-                        <span className="text-white text-sm font-medium">{coin.symbol}</span>
-                        <span className="text-purple-300 text-xs">#{coin.marketCapRank}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* DeFi Tab */}
-          {activeTab === 'defi' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-white">📊 Solana DeFi</h3>
-                {defiData?.solana && (
-                  <div className="bg-purple-600/30 px-4 py-2 rounded-xl">
-                    <span className="text-purple-300 text-sm">Total TVL: </span>
-                    <span className="text-white font-bold">{formatTVL(defiData.solana.tvl)}</span>
-                  </div>
-                )}
-              </div>
-
-              {defiData?.topProtocols?.length > 0 ? (
-                <div className="space-y-3">
-                  <h4 className="text-md font-semibold text-white">Top Protocols by TVL</h4>
-                  {defiData.topProtocols.map((protocol, i) => (
-                    <a
-                      key={i}
-                      href={protocol.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 bg-white/5 hover:bg-white/10 border border-purple-500/20 rounded-xl p-3 transition-all"
-                    >
-                      <span className="text-purple-400 font-bold w-6">{i + 1}</span>
-                      {protocol.logo && <img src={protocol.logo} alt={protocol.name} className="w-8 h-8 rounded-full" />}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-white font-medium">{protocol.name}</span>
-                          <span className="text-purple-300/60 text-xs">{protocol.category}</span>
-                        </div>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-purple-300 text-sm">{formatTVL(protocol.tvl)}</span>
-                          {protocol.tvlChange24h && (
-                            <span className={`text-xs ${protocol.tvlChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              {protocol.tvlChange24h >= 0 ? '↑' : '↓'} {Math.abs(protocol.tvlChange24h).toFixed(2)}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <ExternalLink className="w-4 h-4 text-purple-400" />
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-purple-300 text-center py-8">Loading DeFi data...</p>
-              )}
-
-              {defiData?.topYields?.length > 0 && (
-                <div className="mt-6">
-                  <h4 className="text-md font-semibold text-white mb-3">💰 Top Yield Opportunities</h4>
-                  <div className="grid gap-2">
-                    {defiData.topYields.slice(0, 5).map((pool, i) => (
-                      <div key={i} className="flex items-center justify-between bg-white/5 border border-purple-500/20 rounded-lg p-3">
-                        <div>
-                          <span className="text-white font-medium text-sm">{pool.symbol}</span>
-                          <span className="text-purple-300/60 text-xs ml-2">{pool.project}</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-green-400 font-bold">{pool.apy?.toFixed(2)}% APY</span>
-                          <span className="text-purple-300 text-xs block">{formatTVL(pool.tvl)} TVL</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Content Tab */}
-          {activeTab === 'content' && (
-            <div className="space-y-6">
-              <h3 className="text-lg font-bold text-white">🎬 SMS Content</h3>
-              
-              {/* YouTube Videos */}
-              <div>
-                <h4 className="text-md font-semibold text-white mb-3 flex items-center gap-2">
-                  <Youtube className="w-5 h-5 text-red-500" /> Latest Videos
-                </h4>
-                <div className="grid gap-4">
-                  {youtubeVideos.map((video, i) => (
-                    <div key={i} className="bg-white/5 border border-purple-500/20 rounded-xl overflow-hidden">
-                      <div className="aspect-video">
-                        <iframe
-                          width="100%"
-                          height="100%"
-                          src={`https://www.youtube.com/embed/${video.id}`}
-                          title={video.title}
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                          className="w-full h-full"
-                        />
-                      </div>
-                      <div className="p-3">
-                        <h5 className="text-white font-medium text-sm">{video.title}</h5>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <a
-                  href="https://www.youtube.com/@SMSONYOUTUBE"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-4 inline-flex items-center gap-2 text-purple-300 hover:text-white text-sm"
-                >
-                  View all videos on YouTube <ExternalLink className="w-4 h-4" />
-                </a>
-              </div>
-
-              {/* Social Links */}
-              <div>
-                <h4 className="text-md font-semibold text-white mb-3 flex items-center gap-2">
-                  <Twitter className="w-5 h-5 text-blue-400" /> Follow Us
-                </h4>
-                <div className="flex flex-wrap gap-3">
-                  <a href="https://x.com/smsonx" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-purple-500/20 rounded-xl px-4 py-3 transition-all">
-                    <Twitter className="w-5 h-5 text-blue-400" />
-                    <span className="text-white">@smsonx</span>
-                  </a>
-                  <a href="https://x.com/solmadesimple" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-purple-500/20 rounded-xl px-4 py-3 transition-all">
-                    <Twitter className="w-5 h-5 text-blue-400" />
-                    <span className="text-white">@solmadesimple</span>
-                  </a>
-                  <a href="https://www.tiktok.com/@solanamadesimple" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-purple-500/20 rounded-xl px-4 py-3 transition-all">
-                    <Video className="w-5 h-5 text-pink-400" />
-                    <span className="text-white">TikTok</span>
-                  </a>
-                  <a href="https://www.instagram.com/smscrypto" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-purple-500/20 rounded-xl px-4 py-3 transition-all">
-                    <Instagram className="w-5 h-5 text-pink-500" />
-                    <span className="text-white">Instagram</span>
-                  </a>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
       {connectionMessage && (
@@ -688,46 +418,48 @@ function App() {
             <span>🎉</span>
             <span className="font-semibold text-sm">{connectionMessage}</span>
             <button onClick={() => setConnectionMessage('')} className="ml-1 text-white/80 hover:text-white">
-              <X className="w-4 h-4" />
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
         </div>
       )}
 
-      {showInfoPanel && <InfoPanel />}
-
+      {/* Chat History Sidebar */}
       {showChatHistory && walletConnected && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gradient-to-br from-slate-900 to-purple-900 border border-purple-500/30 rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-purple-500/30">
-              <h3 className="text-lg font-bold text-white">Chat History</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex">
+          <div className="bg-gradient-to-br from-slate-900 to-purple-900 w-72 max-w-[80vw] h-full border-r border-purple-500/30 p-4 overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-bold">Chat History</h3>
               <button onClick={() => setShowChatHistory(false)} className="text-purple-300 hover:text-white">
-                <X className="w-6 h-6" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <div className="p-4">
-              <button onClick={startNewChat} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-4 py-3 font-semibold mb-4">
-                <Plus className="w-5 h-5" /> New Chat
-              </button>
-              <div className="space-y-2 max-h-[50vh] overflow-y-auto">
-                {savedChats.length === 0 ? (
-                  <p className="text-purple-300 text-center py-4">No saved chats yet</p>
-                ) : (
-                  savedChats.map((chat) => (
-                    <div key={chat.id} onClick={() => loadChat(chat)} className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${currentChatId === chat.id ? 'bg-purple-600/30 border border-purple-500/50' : 'bg-white/5 hover:bg-white/10 border border-transparent'}`}>
+            
+            <button onClick={startNewChat} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg px-3 py-2 font-semibold text-sm flex items-center justify-center gap-2 mb-4">
+              <Plus className="w-4 h-4" /> New Chat
+            </button>
+            
+            {savedChats.length === 0 ? (
+              <p className="text-purple-300 text-sm text-center">No saved chats yet</p>
+            ) : (
+              <div className="space-y-2">
+                {savedChats.map((chat) => (
+                  <div key={chat.id} onClick={() => loadChat(chat)} className={`p-3 rounded-lg cursor-pointer group ${currentChatId === chat.id ? 'bg-purple-600/30 border border-purple-500/50' : 'bg-white/5 hover:bg-white/10'}`}>
+                    <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-medium truncate">{chat.title}</p>
-                        <p className="text-purple-300/60 text-xs">{new Date(chat.updated_at).toLocaleDateString()}</p>
+                        <p className="text-white text-sm truncate">{chat.title}</p>
+                        <p className="text-purple-300 text-xs">{new Date(chat.updated_at).toLocaleDateString()}</p>
                       </div>
-                      <button onClick={(e) => deleteChat(chat.id, e)} className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg">
+                      <button onClick={(e) => deleteChat(chat.id, e)} className="text-purple-300 hover:text-red-400 opacity-0 group-hover:opacity-100">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                  ))
-                )}
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
           </div>
+          <div className="flex-1" onClick={() => setShowChatHistory(false)} />
         </div>
       )}
 
@@ -735,14 +467,19 @@ function App() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 py-4">
           <div className="bg-gradient-to-br from-slate-900 to-purple-900 border border-purple-500/30 rounded-2xl p-5 max-w-sm w-full max-h-[85vh] overflow-y-auto relative">
             <button onClick={() => setShowWalletPrompt(false)} className="absolute top-3 right-3 text-purple-300 hover:text-white">
-              <X className="w-5 h-5" />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
             <div className="text-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-3">
                 <Wallet className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-lg font-bold text-white mb-2">Connect Wallet</h2>
-              <p className="text-purple-200 text-sm mb-3">Connect a wallet to continue learning for free!</p>
+              <h2 className="text-lg font-bold text-white mb-2">Connect or Create Wallet</h2>
+              <p className="text-purple-200 text-sm mb-2">
+                You've explored 5 questions! 🎉 To keep learning about Solana, Web3, and crypto, connect your wallet.
+              </p>
+              <p className="text-xs text-purple-300/80 mb-4">
+                It's 100% free, takes 30 seconds, and unlocks unlimited questions + XP rewards.
+              </p>
               
               {isMobile && !isInWalletBrowser() && (
                 <div className="bg-blue-600/20 border border-blue-500/30 rounded-lg p-2 mb-3">
@@ -750,24 +487,69 @@ function App() {
                 </div>
               )}
               
-              <div className="space-y-2 mb-4">
-                {walletOptions.map((wallet) => (
-                  <button key={wallet.id} onClick={() => connectWallet(wallet.id)} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-4 py-2.5 font-semibold hover:from-purple-500 hover:to-pink-500 flex items-center justify-center gap-2 text-sm">
-                    <Wallet className="w-4 h-4" />
-                    {wallet.name}
-                    {isMobile && !isInWalletBrowser() && <ExternalLink className="w-3 h-3 opacity-60" />}
-                  </button>
-                ))}
+              <div className="bg-purple-800/30 border border-purple-500/20 rounded-xl p-3 mb-4">
+                <p className="text-xs text-white font-medium mb-2">Already have a wallet? Select it below:</p>
+                <div className="space-y-2">
+                  {walletOptions.map((wallet) => (
+                    <button key={wallet.id} onClick={() => connectWallet(wallet.id)} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-4 py-2.5 font-semibold hover:from-purple-500 hover:to-pink-500 flex items-center justify-center gap-2 text-sm">
+                      <Wallet className="w-4 h-4" />
+                      {wallet.name}
+                      {isMobile && !isInWalletBrowser() && <ExternalLink className="w-3 h-3 opacity-60" />}
+                    </button>
+                  ))}
+                </div>
               </div>
               
-              <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-3 mb-3">
-                <p className="text-xs text-purple-200 mb-1 font-medium">New to crypto?</p>
-                <p className="text-[10px] text-purple-300">Tap any wallet above → Download the app → Create wallet → Return here</p>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-purple-500/30"></div>
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-gradient-to-br from-slate-900 to-purple-900 px-2 text-purple-300">
+                    Need to create a wallet?
+                  </span>
+                </div>
+              </div>
+              
+              <div className="bg-purple-900/30 border border-purple-500/30 rounded-xl p-3 mb-3">
+                <h3 className="text-white font-semibold text-sm mb-2 flex items-center justify-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Create Your First Wallet (2 min)
+                </h3>
+                <ol className="text-xs text-purple-200 space-y-1.5 text-left">
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">1.</span>
+                    <span>Tap any wallet above to visit their website</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">2.</span>
+                    <span>Install the browser extension or mobile app</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">3.</span>
+                    <span>Create a new wallet (takes 30 seconds)</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">4.</span>
+                    <span>Save your seed phrase securely (never share it!)</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-purple-400">5.</span>
+                    <span>Return here and connect</span>
+                  </li>
+                </ol>
+                <p className="text-[10px] text-purple-300/80 italic mt-2">
+                  💡 Your wallet is free, requires no personal info, and you don't need any crypto to create it.
+                </p>
               </div>
               
               <button onClick={() => setShowWalletPrompt(false)} className="w-full bg-white/10 text-purple-200 rounded-xl px-4 py-2 font-medium hover:bg-white/20 text-sm">
                 Maybe Later
               </button>
+              
+              <p className="text-[10px] text-purple-300/60 mt-3">
+                100% free • No transactions • Just sign-in
+              </p>
             </div>
           </div>
         </div>
@@ -777,15 +559,15 @@ function App() {
       <div className="bg-black/60 backdrop-blur-md border-b border-purple-500/20 px-3 py-2">
         <div className="max-w-6xl mx-auto">
           {/* Bounty Banner */}
-          <div className="flex justify-center mb-2">
-            <div className="bg-gradient-to-r from-yellow-600/30 to-orange-600/30 border border-yellow-500/40 rounded-full px-3 py-1 animate-pulse">
-              <p className="text-[9px] sm:text-xs text-yellow-200 text-center flex items-center gap-1">
-                <Gift className="w-3 h-3" />
-                <span className="font-semibold">USDC Bounties Coming</span> • Holders Only • Community Rewards 🎁
+          <div className="flex justify-center mb-1.5">
+            <div className="bg-gradient-to-r from-yellow-600/20 via-orange-600/20 to-yellow-600/20 border border-yellow-500/40 rounded-full px-3 py-1 animate-pulse">
+              <p className="text-[9px] sm:text-xs text-yellow-300 text-center flex items-center gap-1.5">
+                <Gift className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span><span className="font-bold">USDC Bounties Coming</span> • Holders Only • Community Rewards 🎁</span>
               </p>
             </div>
           </div>
-
+          
           <div className="flex justify-center items-center gap-2 sm:gap-6 mb-1.5 overflow-x-auto">
             {solPrice && (
               <div className="flex items-center gap-1 flex-shrink-0">
@@ -824,11 +606,17 @@ function App() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col items-center px-3 sm:px-4 pt-3 sm:pt-4 pb-4 overflow-y-auto">
+      <div className="flex-1 flex flex-col items-center px-3 sm:px-4 pt-3 sm:pt-6 pb-4 overflow-y-auto">
         <div className="w-full max-w-4xl">
           {/* Mobile Layout */}
           <div className="block sm:hidden mb-3">
             <div className="flex items-center gap-2 mb-2">
+              {walletConnected && (
+                <button onClick={() => setShowChatHistory(true)} className="flex items-center gap-1 p-1.5 bg-purple-600/30 rounded-lg border border-purple-500/30">
+                  <MessageSquare className="w-4 h-4 text-purple-300" />
+                  <span className="text-[9px] text-purple-300">History</span>
+                </button>
+              )}
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
@@ -836,12 +624,6 @@ function App() {
                 <h1 className="text-base font-bold text-white leading-tight">Solana Made Simple</h1>
                 <p className="text-[10px] text-purple-300">Your AI Guide to Solana</p>
               </div>
-              {walletConnected && (
-                <button onClick={() => setShowChatHistory(true)} className="flex items-center gap-1 p-1.5 bg-purple-600/30 rounded-lg border border-purple-500/30">
-                  <MessageSquare className="w-4 h-4 text-purple-300" />
-                  <span className="text-[9px] text-purple-300">History</span>
-                </button>
-              )}
               {walletConnected ? (
                 <button onClick={() => setShowWalletMenu(!showWalletMenu)} className="flex items-center gap-1 bg-purple-600/30 px-2 py-1 rounded-lg border border-purple-500/30">
                   <User className="w-3 h-3 text-purple-300" />
@@ -862,14 +644,9 @@ function App() {
                   <img src="/sms.png" alt="$SMS" className="h-3 w-auto" />
                 </a>
                 <span className="text-[9px] text-purple-300">👁️ {sessionCount}</span>
-                {/* News/DeFi Button */}
-                <button onClick={() => setShowInfoPanel(true)} className="flex items-center gap-1 bg-purple-600/30 px-2 py-0.5 rounded-full border border-purple-500/30">
-                  <Newspaper className="w-3 h-3 text-purple-300" />
-                  <span className="text-[8px] text-purple-300">News</span>
-                </button>
               </div>
               <div className="flex items-center gap-2 overflow-x-auto">
-                {socialLinks.slice(0, 4).map((link) => (
+                {socialLinks.map((link) => (
                   <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="text-purple-300 hover:text-white">
                     <link.Icon className="w-3.5 h-3.5" />
                   </a>
@@ -891,6 +668,12 @@ function App() {
           <div className="hidden sm:block">
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-3">
+                {walletConnected && (
+                  <button onClick={() => setShowChatHistory(true)} className="flex items-center gap-2 p-2 bg-purple-600/30 rounded-xl border border-purple-500/30 hover:bg-purple-600/50" title="Chat History">
+                    <MessageSquare className="w-5 h-5 text-purple-300" />
+                    <span className="text-xs text-purple-300">Chat History</span>
+                  </button>
+                )}
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
@@ -909,24 +692,13 @@ function App() {
               </div>
             </div>
             
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                 <a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-black/40 border border-pink-500/30 px-3 py-1.5 rounded-full hover:border-pink-500/50">
                   <span className="text-[10px] text-purple-300">Powered by</span>
                   <img src="/sms.png" alt="$SMS" className="h-5 w-auto" />
                 </a>
                 <div className="text-xs text-purple-300">👁️ {sessionCount} visits</div>
-                {/* News/DeFi/Content Button */}
-                <button onClick={() => setShowInfoPanel(true)} className="flex items-center gap-2 bg-purple-600/30 px-3 py-1.5 rounded-full border border-purple-500/30 hover:bg-purple-600/50 transition-all">
-                  <Newspaper className="w-4 h-4 text-purple-300" />
-                  <span className="text-xs text-purple-300">News & DeFi</span>
-                </button>
-                {walletConnected && (
-                  <button onClick={() => setShowChatHistory(true)} className="flex items-center gap-2 p-2 bg-purple-600/30 rounded-xl border border-purple-500/30 hover:bg-purple-600/50" title="Chat History">
-                    <MessageSquare className="w-5 h-5 text-purple-300" />
-                    <span className="text-xs text-purple-300">Chat History</span>
-                  </button>
-                )}
               </div>
               
               <div className="relative">
@@ -968,7 +740,7 @@ function App() {
                   <Sparkles className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /><span>What is a seed phrase?</span>
                 </button>
                 <button onClick={() => handleSubmit('Explain DeFi and staking')} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium text-[10px] sm:text-base text-left flex items-center gap-1.5 sm:gap-3">
-                  <TrendingUp className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /><span>DeFi and staking</span>
+                  <Sparkles className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /><span>DeFi and staking</span>
                 </button>
                 <button onClick={() => handleSubmit('How do Solana memecoins work?')} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium text-[10px] sm:text-base text-left flex items-center gap-1.5 sm:gap-3">
                   <Sparkles className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /><span>Solana memecoins</span>
@@ -1032,7 +804,7 @@ function App() {
           )}
           <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="flex gap-1.5 sm:gap-2">
             {messages.length > 1 && (
-              <button type="button" onClick={resetChat} className="bg-purple-600/50 hover:bg-purple-600 text-white p-2 sm:p-3 rounded-lg sm:rounded-xl" title="Reset">
+              <button type="button" onClick={startNewChat} className="bg-purple-600/50 hover:bg-purple-600 text-white p-2 sm:p-3 rounded-lg sm:rounded-xl" title="New Chat">
                 <Home className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             )}
