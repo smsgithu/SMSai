@@ -177,12 +177,12 @@ function App() {
 
   const socialLinks = [
     { name: 'X', url: 'https://x.com/smsonx', Icon: Twitter, label: '@smsonx' },
-    { name: 'X', url: 'https://x.com/solmadesimple', Icon: Twitter, label: '@SMS' },
+    { name: 'X', url: 'https://x.com/solmadesimple', Icon: Twitter, label: '@solmadesimple' },
     { name: 'YouTube', url: 'https://www.youtube.com/@SMSONYOUTUBE', Icon: Youtube, label: 'YouTube' },
     { name: 'TikTok', url: 'https://www.tiktok.com/@solanamadesimple', Icon: Video, label: 'TikTok' },
     { name: 'Instagram', url: 'https://www.instagram.com/smscrypto', Icon: Instagram, label: 'Insta' },
     { name: 'LinkedIn', url: 'https://www.linkedin.com/in/sean-suvie-77a35018b/', Icon: Linkedin, label: 'LinkedIn' },
-    { name: 'Book Call', url: 'https://calendly.com/seanmsuvie/30min', Icon: Calendar, label: 'Book' }
+    { name: 'Book Call', url: 'https://calendly.com/seanmsuvie/30min', Icon: Calendar, label: "Book a free call, let's chat!" }
   ];
 
   const formatTime = (date) => {
@@ -612,8 +612,9 @@ function App() {
           <div className="block sm:hidden mb-3">
             <div className="flex items-center gap-2 mb-2">
               {walletConnected && (
-                <button onClick={() => setShowChatHistory(true)} className="p-1.5 bg-purple-600/30 rounded-lg border border-purple-500/30">
+                <button onClick={() => setShowChatHistory(true)} className="flex items-center gap-1 p-1.5 bg-purple-600/30 rounded-lg border border-purple-500/30">
                   <MessageSquare className="w-4 h-4 text-purple-300" />
+                  <span className="text-[9px] text-purple-300">History</span>
                 </button>
               )}
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
@@ -668,8 +669,9 @@ function App() {
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-3">
                 {walletConnected && (
-                  <button onClick={() => setShowChatHistory(true)} className="p-2 bg-purple-600/30 rounded-xl border border-purple-500/30 hover:bg-purple-600/50" title="Chat History">
+                  <button onClick={() => setShowChatHistory(true)} className="flex items-center gap-2 p-2 bg-purple-600/30 rounded-xl border border-purple-500/30 hover:bg-purple-600/50" title="Chat History">
                     <MessageSquare className="w-5 h-5 text-purple-300" />
+                    <span className="text-xs text-purple-300">Chat History</span>
                   </button>
                 )}
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
