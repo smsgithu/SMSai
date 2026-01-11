@@ -47,7 +47,7 @@ function App() {
       name: 'Phantom', 
       window: 'solana', 
       check: (w) => w?.isPhantom,
-      mobileLink: 'https://phantom.app/ul/browse/https://smsaiapp.vercel.app',
+      mobileLink: 'https://phantom.app/ul/browse/https://smsai.fun',
       downloadUrl: 'https://phantom.app/'
     },
     { 
@@ -55,7 +55,7 @@ function App() {
       name: 'Solflare', 
       window: 'solflare', 
       check: (w) => !!w,
-      mobileLink: 'https://solflare.com/ul/v1/browse/https://smsaiapp.vercel.app',
+      mobileLink: 'https://solflare.com/ul/v1/browse/https://smsai.fun',
       downloadUrl: 'https://solflare.com/'
     },
     { 
@@ -63,7 +63,7 @@ function App() {
       name: 'Backpack', 
       window: 'backpack', 
       check: (w) => w?.isBackpack || (w && typeof w.connect === 'function'),
-      mobileLink: 'https://backpack.app/ul/browse/https://smsaiapp.vercel.app',
+      mobileLink: 'https://backpack.app/ul/browse/https://smsai.fun',
       downloadUrl: 'https://backpack.app/'
     },
   ];
@@ -622,7 +622,10 @@ function App() {
               </div>
               <div className="flex-1 min-w-0">
                 <h1 className="text-base font-bold text-white leading-tight">Solana Made Simple</h1>
-                <p className="text-[10px] text-purple-300">Your AI Guide to Solana</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-[10px] text-purple-300">Your AI Guide to Solana</p>
+                  <span className="text-[9px] bg-gradient-to-r from-purple-600/50 to-pink-600/50 text-white px-1.5 py-0.5 rounded-full font-medium">smsai.fun</span>
+                </div>
               </div>
               {walletConnected ? (
                 <button onClick={() => setShowWalletMenu(!showWalletMenu)} className="flex items-center gap-1 bg-purple-600/30 px-2 py-1 rounded-lg border border-purple-500/30">
@@ -678,7 +681,10 @@ function App() {
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-white">Solana Made Simple</h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-white">Solana Made Simple</h1>
+                    <span className="text-xs bg-gradient-to-r from-purple-600/50 to-pink-600/50 text-white px-2 py-1 rounded-full font-medium">smsai.fun</span>
+                  </div>
                   <p className="text-sm text-purple-300">Your AI Guide to the Solana Ecosystem</p>
                 </div>
               </div>
