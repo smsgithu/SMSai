@@ -6,7 +6,7 @@ function App() {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "👋 🌟 Welcome to SMSai\n\nYour AI guide to the Solana ecosystem. We break things down simply—from wallets and seed phrases to staking, DeFi, RWAs, memecoins, and how Solana actually works under the hood.\n\nAsk me anything about Solana.",
+      content: "👋 🌟 Welcome to smsai.fun\n\nYour AI guide to the Solana ecosystem. We break things down simply—from wallets and seed phrases to staking, DeFi, RWAs, memecoins, and how Solana actually works under the hood.\n\nAsk me anything about Solana.",
       timestamp: new Date()
     }
   ]);
@@ -407,7 +407,7 @@ function App() {
   };
 
   const resetChat = () => {
-    setMessages([{ role: 'assistant', content: "👋 🌟 Welcome to SMSai\n\nYour AI guide to the Solana ecosystem. We break things down simply—from wallets and seed phrases to staking, DeFi, RWAs, memecoins, and how Solana actually works under the hood.\n\nAsk me anything about Solana.", timestamp: new Date() }]);
+    setMessages([{ role: 'assistant', content: "👋 🌟 Welcome to smsai.fun\n\nYour AI guide to the Solana ecosystem. We break things down simply—from wallets and seed phrases to staking, DeFi, RWAs, memecoins, and how Solana actually works under the hood.\n\nAsk me anything about Solana.", timestamp: new Date() }]);
   };
 
   return (
@@ -621,11 +621,10 @@ function App() {
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-base font-bold text-white leading-tight">Solana Made Simple</h1>
                 <div className="flex items-center gap-2">
-                  <p className="text-[10px] text-purple-300">Your AI Guide to Solana</p>
-                  <span className="text-[9px] bg-gradient-to-r from-purple-600/50 to-pink-600/50 text-white px-1.5 py-0.5 rounded-full font-medium">smsai.fun</span>
+                  <h1 className="text-base font-bold text-white leading-tight">smsai.fun</h1>
                 </div>
+                <p className="text-[10px] text-purple-300">Your AI Guide to Solana</p>
               </div>
               {walletConnected ? (
                 <button onClick={() => setShowWalletMenu(!showWalletMenu)} className="flex items-center gap-1 bg-purple-600/30 px-2 py-1 rounded-lg border border-purple-500/30">
@@ -681,10 +680,7 @@ function App() {
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold text-white">Solana Made Simple</h1>
-                    <span className="text-xs bg-gradient-to-r from-purple-600/50 to-pink-600/50 text-white px-2 py-1 rounded-full font-medium">smsai.fun</span>
-                  </div>
+                  <h1 className="text-2xl font-bold text-white">smsai.fun</h1>
                   <p className="text-sm text-purple-300">Your AI Guide to the Solana Ecosystem</p>
                 </div>
               </div>
