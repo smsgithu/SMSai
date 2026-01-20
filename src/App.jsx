@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Wallet, Sparkles, Send, Home, User, LogOut, Loader2, Twitter, Youtube, Video, Instagram, Linkedin, Calendar, ChevronDown, ExternalLink, MessageSquare, Plus, Trash2, Gift } from 'lucide-react';
+import {   
+  createDefaultAuthorizationCache,   
+  createDefaultChainSelector,   
+  createDefaultWalletNotFoundHandler,  
+  registerMwa,   
+} from '@solana-mobile/wallet-standard-mobile';
 
 function App() {
   const [messages, setMessages] = useState([
@@ -30,6 +36,21 @@ function App() {
   const [showChatHistory, setShowChatHistory] = useState(false);
   const messagesEndRef = useRef(null);
   const hasTrackedSession = useRef(false);
+
+  // Register Mobile Wallet Adapter for Solana Mobile / dApp Store
+  useEffect(() => {
+    registerMwa({  
+      appIdentity: {  
+        name: 'SMSai',  
+        uri: 'https://smsai.fun',  
+        icon: '/icon-512.png',
+      },      
+      authorizationCache: createDefaultAuthorizationCache(),  
+      chains: ['solana:mainnet'],
+      chainSelector: createDefaultChainSelector(),  
+      onWalletNotFound: createDefaultWalletNotFoundHandler(),  
+    });
+  }, []);
 
   useEffect(() => {
     const checkMobile = () => {
