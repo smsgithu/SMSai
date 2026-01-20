@@ -467,7 +467,7 @@ function App() {
                 <a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 bg-black/40 border border-pink-500/30 px-2 py-0.5 rounded-full"><span className="text-[8px] text-purple-300">Powered by</span><img src="/sms.png" alt="$SMS" className="h-3 w-auto" /></a>
                 <span className="text-[9px] text-purple-300">👁️ {sessionCount}</span>
               </div>
-              <div className="flex items-center gap-2 overflow-x-auto">{socialLinks.slice(0, 5).map((link) => <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="text-purple-300 hover:text-white"><link.Icon className="w-3.5 h-3.5" /></a>)}</div>
+              <div className="flex items-center gap-2 flex-wrap justify-end">{socialLinks.map((link) => <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="text-purple-300 hover:text-white"><link.Icon className="w-3.5 h-3.5" /></a>)}</div>
             </div>
             {showWalletMenu && walletConnected && <div className="absolute right-3 top-28 bg-slate-900 border border-purple-500/30 rounded-lg shadow-lg z-50"><div className="px-3 py-1.5 border-b border-purple-500/20 text-[10px] text-purple-300">{userXP} XP • {questionCount} questions</div><button onClick={disconnectWallet} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10"><LogOut className="w-3 h-3" />Disconnect</button></div>}
           </div>
