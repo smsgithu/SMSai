@@ -7,7 +7,7 @@ export default async function handler(req, res) {
 
   try {
     const result = await sql`
-      SELECT wallet_address, xp, total_questions as questions_asked 
+      SELECT wallet_address, xp, total_questions as questions_asked FROM users WHERE xp > 0 ORDER BY xp DESC LIMIT 50
       FROM users 
       WHERE xp > 0
       ORDER BY xp DESC 
