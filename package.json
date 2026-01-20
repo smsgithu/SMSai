@@ -13,11 +13,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-<<<<<<< HEAD
     "@solana-mobile/wallet-standard-mobile": "^0.4.4",
-=======
     "@anthropic-ai/sdk": "^0.24.0",
->>>>>>> b67d6716b61dbb92205e90af71696d7e735df7e6
     "@vercel/postgres": "^0.10.0",
     "lucide-react": "^0.263.1",
     "react": "^18.2.0",
