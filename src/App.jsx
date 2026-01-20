@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Wallet, Sparkles, Send, Home, User, LogOut, Loader2, Twitter, Youtube, Video, Instagram, Linkedin, Calendar, ChevronDown, ExternalLink, MessageSquare, Plus, Trash2, Gift } from 'lucide-react';
+import { Wallet, Sparkles, Send, Home, User, LogOut, Loader2, Twitter, Youtube, Video, Instagram, Linkedin, Calendar, ChevronDown, ExternalLink, MessageSquare, Plus, Trash2, Gift, Trophy, Medal } from 'lucide-react';
 import {   
   createDefaultAuthorizationCache,   
   createDefaultChainSelector,   
@@ -34,6 +34,8 @@ function App() {
   const [savedChats, setSavedChats] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(null);
   const [showChatHistory, setShowChatHistory] = useState(false);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
   const messagesEndRef = useRef(null);
   const hasTrackedSession = useRef(false);
 
@@ -62,7 +64,15 @@ function App() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const walletOptions = [
+  const walletOptions = useMemo(() => [
+    { 
+      id: 'jupiter', 
+      name: 'Jupiter', 
+      window: 'jupiterWallet', 
+      check: (w) => !!w,
+      mobileLink: 'https://jup.ag/onboard',
+      downloadUrl: 'https://chromewebstore.google.com/detail/jupiter-wallet/iledlaeogohbilgbfhmbgkgmpplbfboh'
+    },
     { 
       id: 'phantom', 
       name: 'Phantom', 
@@ -87,7 +97,7 @@ function App() {
       mobileLink: 'https://backpack.app/ul/browse/https://smsai.fun',
       downloadUrl: 'https://backpack.app/'
     },
-  ];
+  ], []);
 
   const syncUserData = async (walletAddr, updates = {}) => {
     try {
@@ -97,13 +107,11 @@ function App() {
         xp: updates.xp !== undefined ? updates.xp : userXP,
         questions_asked: updates.questions_asked !== undefined ? updates.questions_asked : questionCount
       };
-
       const response = await fetch('/api/user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
       if (!response.ok) throw new Error(`Sync failed: ${response.status}`);
       const data = await response.json();
       return data.user;
@@ -128,7 +136,21 @@ function App() {
     }
   };
 
-  // Chat history functions
+  const loadLeaderboard = async () => {
+    try {
+      setLeaderboardLoading(true);
+      const response = await fetch('/api/leaderboard');
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboard(data.leaderboard || []);
+      }
+    } catch (error) {
+      console.error('Failed to load leaderboard:', error);
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  };
+
   const loadChats = async (walletAddr) => {
     try {
       const response = await fetch(`/api/chats?wallet_address=${walletAddr}`);
@@ -143,9 +165,7 @@ function App() {
 
   const saveCurrentChat = async () => {
     if (!walletConnected || messages.length <= 1) return;
-    
     const title = messages.find(m => m.role === 'user')?.content.slice(0, 50) || 'New Chat';
-    
     try {
       const response = await fetch('/api/chats', {
         method: 'POST',
@@ -157,7 +177,6 @@ function App() {
           messages: messages
         })
       });
-      
       if (response.ok) {
         const data = await response.json();
         setCurrentChatId(data.chat_id);
@@ -179,18 +198,14 @@ function App() {
     try {
       await fetch(`/api/chats?chat_id=${chatId}&wallet_address=${walletAddress}`, { method: 'DELETE' });
       setSavedChats(savedChats.filter(c => c.id !== chatId));
-      if (currentChatId === chatId) {
-        resetChat();
-      }
+      if (currentChatId === chatId) resetChat();
     } catch (error) {
       console.error('Failed to delete chat:', error);
     }
   };
 
   const startNewChat = () => {
-    if (walletConnected && messages.length > 1) {
-      saveCurrentChat();
-    }
+    if (walletConnected && messages.length > 1) saveCurrentChat();
     setCurrentChatId(null);
     resetChat();
     setShowChatHistory(false);
@@ -203,26 +218,20 @@ function App() {
     { name: 'TikTok', url: 'https://www.tiktok.com/@solanamadesimple', Icon: Video, label: 'TikTok' },
     { name: 'Instagram', url: 'https://www.instagram.com/smscrypto', Icon: Instagram, label: 'Insta' },
     { name: 'LinkedIn', url: 'https://www.linkedin.com/in/sean-suvie-77a35018b/', Icon: Linkedin, label: 'LinkedIn' },
-    { name: 'Book Call', url: 'https://calendly.com/seanmsuvie/30min', Icon: Calendar, label: "Book a free call, let's chat!" }
+    { name: 'Book Call', url: 'https://calendly.com/seanmsuvie/30min', Icon: Calendar, label: "Let's chat!" }
   ];
 
-  const formatTime = (date) => {
-    return new Date(date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  };
-
+  const formatTime = (date) => new Date(date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   const shortenAddress = (address) => `${address.slice(0, 4)}...${address.slice(-4)}`;
-
-  const isInWalletBrowser = () => !!(window.solana?.isPhantom || window.solflare || window.backpack);
+  const isInWalletBrowser = () => !!(window.solana?.isPhantom || window.solflare || window.backpack || window.jupiterWallet);
 
   useEffect(() => {
     if (!hasTrackedSession.current) {
       hasTrackedSession.current = true;
-      
-      // Track global visit count
+      loadLeaderboard();
       const trackVisit = async () => {
         try {
           const alreadyCounted = sessionStorage.getItem('smsai_visit_counted');
-          
           if (!alreadyCounted) {
             const response = await fetch('/api/visits', { method: 'POST' });
             const data = await response.json();
@@ -239,10 +248,8 @@ function App() {
         }
       };
       trackVisit();
-
       const savedWallet = localStorage.getItem('smsai_wallet');
       const savedWalletType = localStorage.getItem('smsai_wallet_type');
-      
       if (savedWallet) {
         loadUserData(savedWallet).then(userData => {
           if (userData) {
@@ -268,7 +275,6 @@ function App() {
         const cgData = await cgResponse.json();
         setSolPrice({ price: cgData.solana.usd, change: cgData.solana.usd_24h_change });
         setBtcPrice({ price: cgData.bitcoin.usd, change: cgData.bitcoin.usd_24h_change });
-
         const smsContract = 'A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS';
         const dexResponse = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${smsContract}`);
         const dexData = await dexResponse.json();
@@ -289,10 +295,9 @@ function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Auto-save chat when messages change (for wallet users)
   useEffect(() => {
     if (walletConnected && messages.length > 1) {
-      const timeout = setTimeout(() => saveCurrentChat(), 2000);
+      const timeout = setTimeout(() => saveCurrentChat(), 3000);
       return () => clearTimeout(timeout);
     }
   }, [messages, walletConnected]);
@@ -301,9 +306,7 @@ function App() {
     try {
       const walletConfig = walletOptions.find(w => w.id === walletName);
       if (!walletConfig) { alert('Unknown wallet type.'); return; }
-
       const walletObj = window[walletConfig.window];
-
       if (!walletObj || !walletConfig.check(walletObj)) {
         if (isMobile && walletConfig.mobileLink) {
           window.location.href = walletConfig.mobileLink;
@@ -313,7 +316,6 @@ function App() {
         alert(`${walletConfig.name} not detected.\n\n1. Install from the opened page\n2. Refresh this page\n3. Try again`);
         return;
       }
-
       const response = await walletObj.connect();
       let publicKey;
       if (walletName === 'solflare') {
@@ -325,12 +327,9 @@ function App() {
       } else {
         throw new Error('Could not find public key');
       }
-      
       const address = typeof publicKey === 'string' ? publicKey : publicKey.toString();
       const userData = await loadUserData(address);
-      
       let newXP = 0, newQuestionCount = 0, message = '';
-      
       if (userData) {
         newXP = userData.xp || 0;
         newQuestionCount = userData.questions_asked || 0;
@@ -346,7 +345,6 @@ function App() {
           return;
         }
       }
-      
       setWalletAddress(address);
       setWalletConnected(true);
       setWalletType(walletName);
@@ -359,6 +357,7 @@ function App() {
       setConnectionMessage(message);
       setTimeout(() => setConnectionMessage(''), 5000);
       loadChats(address);
+      loadLeaderboard();
     } catch (error) {
       if (error.message?.includes('User rejected')) alert('Connection cancelled.');
       else if (error.code === 4001) alert('Connection rejected. Please approve in your wallet.');
@@ -383,26 +382,21 @@ function App() {
   const handleSubmit = async (promptText = null) => {
     const userMessage = promptText || input.trim();
     if (!userMessage || loading) return;
-
     if (!walletConnected && questionCount >= 5) {
       setShowWalletPrompt(true);
       return;
     }
-
     const newMessages = [...messages, { role: 'user', content: userMessage, timestamp: new Date() }];
     setMessages(newMessages);
     setInput('');
     setLoading(true);
-
     const newQuestionCount = questionCount + 1;
     setQuestionCount(newQuestionCount);
-
     if (walletConnected && walletAddress) {
       const newXP = userXP + 5;
       setUserXP(newXP);
       syncUserData(walletAddress, { xp: newXP, questions_asked: newQuestionCount }).catch(() => {});
     }
-
     try {
       const recentMessages = newMessages.slice(-10);
       const response = await fetch('/api/chat', {
@@ -413,12 +407,11 @@ function App() {
           wallet_address: walletAddress || null,
         }),
       });
-
       const data = await response.json();
       if (!response.ok || data.error) throw new Error(data.error || 'API request failed');
-
       const content = data.content || "I received your message but couldn't generate a response. Please try again.";
       setMessages([...newMessages, { role: 'assistant', content, timestamp: new Date() }]);
+      if (newQuestionCount % 5 === 0) loadLeaderboard();
     } catch (error) {
       console.error('Chat error:', error);
       setMessages([...newMessages, { role: 'assistant', content: "I apologize, but I'm having trouble connecting right now. Please try again in a moment.", timestamp: new Date() }]);
@@ -429,6 +422,13 @@ function App() {
 
   const resetChat = () => {
     setMessages([{ role: 'assistant', content: "👋 🌟 Welcome to smsai.fun\n\nYour AI guide to the Solana ecosystem. We break things down simply—from wallets and seed phrases to staking, DeFi, RWAs, memecoins, and how Solana actually works under the hood.\n\nAsk me anything about Solana.", timestamp: new Date() }]);
+  };
+
+  const getRankIcon = (index) => {
+    if (index === 0) return <Trophy className="w-4 h-4 text-yellow-400" />;
+    if (index === 1) return <Medal className="w-4 h-4 text-gray-300" />;
+    if (index === 2) return <Medal className="w-4 h-4 text-amber-600" />;
+    return <span className="text-xs text-purple-300 w-4 text-center">{index + 1}</span>;
   };
 
   return (
@@ -445,7 +445,6 @@ function App() {
         </div>
       )}
 
-      {/* Chat History Sidebar */}
       {showChatHistory && walletConnected && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex">
           <div className="bg-gradient-to-br from-slate-900 to-purple-900 w-72 max-w-[80vw] h-full border-r border-purple-500/30 p-4 overflow-y-auto">
@@ -455,11 +454,9 @@ function App() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            
             <button onClick={startNewChat} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg px-3 py-2 font-semibold text-sm flex items-center justify-center gap-2 mb-4">
               <Plus className="w-4 h-4" /> New Chat
             </button>
-            
             {savedChats.length === 0 ? (
               <p className="text-purple-300 text-sm text-center">No saved chats yet</p>
             ) : (
@@ -495,19 +492,13 @@ function App() {
                 <Wallet className="w-6 h-6 text-white" />
               </div>
               <h2 className="text-lg font-bold text-white mb-2">Connect or Create Wallet</h2>
-              <p className="text-purple-200 text-sm mb-2">
-                You've explored 5 questions! 🎉 To keep learning about Solana, Web3, and crypto, connect your wallet.
-              </p>
-              <p className="text-xs text-purple-300/80 mb-4">
-                It's 100% free, takes 30 seconds, and unlocks unlimited questions + XP rewards.
-              </p>
-              
+              <p className="text-purple-200 text-sm mb-2">You've explored 5 questions! 🎉 To keep learning about Solana, Web3, and crypto, connect your wallet.</p>
+              <p className="text-xs text-purple-300/80 mb-4">It's 100% free, takes 30 seconds, and unlocks unlimited questions + XP rewards.</p>
               {isMobile && !isInWalletBrowser() && (
                 <div className="bg-blue-600/20 border border-blue-500/30 rounded-lg p-2 mb-3">
                   <p className="text-xs text-blue-200">📱 Tap a wallet to open this site in that wallet's browser</p>
                 </div>
               )}
-              
               <div className="bg-purple-800/30 border border-purple-500/20 rounded-xl p-3 mb-4">
                 <p className="text-xs text-white font-medium mb-2">Already have a wallet? Select it below:</p>
                 <div className="space-y-2">
@@ -520,66 +511,30 @@ function App() {
                   ))}
                 </div>
               </div>
-              
               <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-purple-500/30"></div>
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="bg-gradient-to-br from-slate-900 to-purple-900 px-2 text-purple-300">
-                    Need to create a wallet?
-                  </span>
-                </div>
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-purple-500/30"></div></div>
+                <div className="relative flex justify-center text-xs"><span className="bg-gradient-to-br from-slate-900 to-purple-900 px-2 text-purple-300">Need to create a wallet?</span></div>
               </div>
-              
               <div className="bg-purple-900/30 border border-purple-500/30 rounded-xl p-3 mb-3">
-                <h3 className="text-white font-semibold text-sm mb-2 flex items-center justify-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  Create Your First Wallet (2 min)
-                </h3>
+                <h3 className="text-white font-semibold text-sm mb-2 flex items-center justify-center gap-2"><Sparkles className="w-4 h-4" />Create Your First Wallet (2 min)</h3>
                 <ol className="text-xs text-purple-200 space-y-1.5 text-left">
-                  <li className="flex gap-2">
-                    <span className="font-bold text-purple-400">1.</span>
-                    <span>Tap any wallet above to visit their website</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-bold text-purple-400">2.</span>
-                    <span>Install the browser extension or mobile app</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-bold text-purple-400">3.</span>
-                    <span>Create a new wallet (takes 30 seconds)</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-bold text-purple-400">4.</span>
-                    <span>Save your seed phrase securely (never share it!)</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-bold text-purple-400">5.</span>
-                    <span>Return here and connect</span>
-                  </li>
+                  <li className="flex gap-2"><span className="font-bold text-purple-400">1.</span><span>Tap any wallet above to visit their website</span></li>
+                  <li className="flex gap-2"><span className="font-bold text-purple-400">2.</span><span>Install the browser extension or mobile app</span></li>
+                  <li className="flex gap-2"><span className="font-bold text-purple-400">3.</span><span>Create a new wallet (takes 30 seconds)</span></li>
+                  <li className="flex gap-2"><span className="font-bold text-purple-400">4.</span><span>Save your seed phrase securely (never share it!)</span></li>
+                  <li className="flex gap-2"><span className="font-bold text-purple-400">5.</span><span>Return here and connect</span></li>
                 </ol>
-                <p className="text-[10px] text-purple-300/80 italic mt-2">
-                  💡 Your wallet is free, requires no personal info, and you don't need any crypto to create it.
-                </p>
+                <p className="text-[10px] text-purple-300/80 italic mt-2">💡 Your wallet is free, requires no personal info, and you don't need any crypto to create it.</p>
               </div>
-              
-              <button onClick={() => setShowWalletPrompt(false)} className="w-full bg-white/10 text-purple-200 rounded-xl px-4 py-2 font-medium hover:bg-white/20 text-sm">
-                Maybe Later
-              </button>
-              
-              <p className="text-[10px] text-purple-300/60 mt-3">
-                100% free • No transactions • Just sign-in
-              </p>
+              <button onClick={() => setShowWalletPrompt(false)} className="w-full bg-white/10 text-purple-200 rounded-xl px-4 py-2 font-medium hover:bg-white/20 text-sm">Maybe Later</button>
+              <p className="text-[10px] text-purple-300/60 mt-3">100% free • No transactions • Just sign-in</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Header */}
       <div className="bg-black/60 backdrop-blur-md border-b border-purple-500/20 px-3 py-2">
         <div className="max-w-6xl mx-auto">
-          {/* Bounty Banner */}
           <div className="flex justify-center mb-1.5">
             <div className="bg-gradient-to-r from-yellow-600/20 via-orange-600/20 to-yellow-600/20 border border-yellow-500/40 rounded-full px-3 py-1 animate-pulse">
               <p className="text-[9px] sm:text-xs text-yellow-300 text-center flex items-center gap-1.5">
@@ -588,33 +543,26 @@ function App() {
               </p>
             </div>
           </div>
-          
           <div className="flex justify-center items-center gap-2 sm:gap-6 mb-1.5 overflow-x-auto">
             {solPrice && (
               <div className="flex items-center gap-1 flex-shrink-0">
                 <span className="text-purple-300 font-semibold text-[10px] sm:text-xs">$SOL</span>
                 <span className="text-white font-bold text-[10px] sm:text-xs">${solPrice.price.toFixed(2)}</span>
-                <span className={`text-[9px] sm:text-[10px] ${solPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {solPrice.change >= 0 ? '↑' : '↓'}{Math.abs(solPrice.change).toFixed(1)}%
-                </span>
+                <span className={`text-[9px] sm:text-[10px] ${solPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>{solPrice.change >= 0 ? '↑' : '↓'}{Math.abs(solPrice.change).toFixed(1)}%</span>
               </div>
             )}
             {btcPrice && (
               <div className="flex items-center gap-1 flex-shrink-0">
                 <span className="text-orange-300 font-semibold text-[10px] sm:text-xs">$BTC</span>
                 <span className="text-white font-bold text-[10px] sm:text-xs">${(btcPrice.price / 1000).toFixed(1)}k</span>
-                <span className={`text-[9px] sm:text-[10px] ${btcPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {btcPrice.change >= 0 ? '↑' : '↓'}{Math.abs(btcPrice.change).toFixed(1)}%
-                </span>
+                <span className={`text-[9px] sm:text-[10px] ${btcPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>{btcPrice.change >= 0 ? '↑' : '↓'}{Math.abs(btcPrice.change).toFixed(1)}%</span>
               </div>
             )}
             {smsPrice && (
               <div className="flex items-center gap-1 flex-shrink-0">
                 <a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS" target="_blank" rel="noopener noreferrer" className="text-pink-400 font-semibold text-[10px] sm:text-xs hover:text-pink-300">$SMS</a>
                 <span className="text-white font-bold text-[10px] sm:text-xs">${smsPrice.price < 0.01 ? smsPrice.price.toFixed(6) : smsPrice.price.toFixed(4)}</span>
-                <span className={`text-[9px] sm:text-[10px] ${smsPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {smsPrice.change >= 0 ? '↑' : '↓'}{Math.abs(smsPrice.change).toFixed(1)}%
-                </span>
+                <span className={`text-[9px] sm:text-[10px] ${smsPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>{smsPrice.change >= 0 ? '↑' : '↓'}{Math.abs(smsPrice.change).toFixed(1)}%</span>
                 <a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS" target="_blank" rel="noopener noreferrer" className="bg-gradient-to-r from-pink-600 to-purple-600 text-white text-[8px] px-1.5 py-0.5 rounded-full font-semibold">Buy</a>
               </div>
             )}
@@ -629,7 +577,6 @@ function App() {
 
       <div className="flex-1 flex flex-col items-center px-3 sm:px-4 pt-3 sm:pt-6 pb-4 overflow-y-auto">
         <div className="w-full max-w-4xl">
-          {/* Mobile Layout */}
           <div className="block sm:hidden mb-3">
             <div className="flex items-center gap-2 mb-2">
               {walletConnected && (
@@ -642,9 +589,7 @@ function App() {
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-base font-bold text-white leading-tight">smsai.fun</h1>
-                </div>
+                <h1 className="text-base font-bold text-white leading-tight">smsai.fun</h1>
                 <p className="text-[10px] text-purple-300">Your AI Guide to Solana</p>
               </div>
               {walletConnected ? (
@@ -659,7 +604,6 @@ function App() {
                 </button>
               )}
             </div>
-            
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 bg-black/40 border border-pink-500/30 px-2 py-0.5 rounded-full">
@@ -669,14 +613,13 @@ function App() {
                 <span className="text-[9px] text-purple-300">👁️ {sessionCount}</span>
               </div>
               <div className="flex items-center gap-2 overflow-x-auto">
-                {socialLinks.map((link) => (
+                {socialLinks.slice(0, 5).map((link) => (
                   <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="text-purple-300 hover:text-white">
                     <link.Icon className="w-3.5 h-3.5" />
                   </a>
                 ))}
               </div>
             </div>
-            
             {showWalletMenu && walletConnected && (
               <div className="absolute right-3 top-28 bg-slate-900 border border-purple-500/30 rounded-lg shadow-lg z-50">
                 <div className="px-3 py-1.5 border-b border-purple-500/20 text-[10px] text-purple-300">{userXP} XP • {questionCount} questions</div>
@@ -687,7 +630,6 @@ function App() {
             )}
           </div>
 
-          {/* Desktop Layout */}
           <div className="hidden sm:block">
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-3">
@@ -714,7 +656,6 @@ function App() {
                 ))}
               </div>
             </div>
-            
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                 <a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-black/40 border border-pink-500/30 px-3 py-1.5 rounded-full hover:border-pink-500/50">
@@ -723,7 +664,6 @@ function App() {
                 </a>
                 <div className="text-xs text-purple-300">👁️ {sessionCount} visits</div>
               </div>
-              
               <div className="relative">
                 {walletConnected ? (
                   <div className="relative">
@@ -772,7 +712,7 @@ function App() {
             </div>
           )}
 
-          <div className="space-y-2 sm:space-y-4 mb-20 sm:mb-24 max-w-2xl mx-auto">
+          <div className="space-y-2 sm:space-y-4 mb-4 max-w-2xl mx-auto">
             {messages.map((message, index) => (
               <div key={index} className={`flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {message.role === 'assistant' && (
@@ -804,6 +744,44 @@ function App() {
               </div>
             )}
             <div ref={messagesEndRef} />
+          </div>
+
+          <div className="max-w-2xl mx-auto mb-24 sm:mb-28">
+            <div className="bg-gradient-to-br from-purple-900/40 to-pink-900/40 border border-purple-500/30 rounded-xl p-3 sm:p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-white font-bold text-sm sm:text-base flex items-center gap-2">
+                  <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
+                  XP Leaderboard
+                </h3>
+                <button onClick={loadLeaderboard} className="text-purple-300 hover:text-white text-xs">Refresh</button>
+              </div>
+              {leaderboardLoading ? (
+                <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-purple-300" /></div>
+              ) : leaderboard.length === 0 ? (
+                <p className="text-purple-300 text-xs sm:text-sm text-center py-2">No users yet. Be the first to earn XP!</p>
+              ) : (
+                <div className="space-y-2">
+                  {leaderboard.slice(0, 10).map((user, index) => (
+                    <div key={user.wallet_address} className={`flex items-center justify-between p-2 rounded-lg ${walletAddress === user.wallet_address ? 'bg-purple-600/30 border border-purple-500/50' : 'bg-white/5'}`}>
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="w-5 flex justify-center">{getRankIcon(index)}</div>
+                        <span className="text-white text-xs sm:text-sm font-mono">{shortenAddress(user.wallet_address)}</span>
+                        {walletAddress === user.wallet_address && <span className="text-[9px] sm:text-xs text-purple-300">(you)</span>}
+                      </div>
+                      <div className="flex items-center gap-2 sm:gap-4">
+                        <span className="text-purple-300 text-[10px] sm:text-xs">{user.questions_asked || 0} Q's</span>
+                        <span className="text-yellow-400 font-bold text-xs sm:text-sm">{user.xp || 0} XP</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!walletConnected && (
+                <button onClick={() => setShowWalletPrompt(true)} className="w-full mt-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg px-3 py-2 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2">
+                  <Wallet className="w-3 h-3 sm:w-4 sm:h-4" />Connect to Join Leaderboard
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -839,14 +817,17 @@ function App() {
               disabled={loading || (!walletConnected && questionCount >= 5)}
               className="flex-1 bg-white/10 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 px-3 py-2 sm:py-3 rounded-lg sm:rounded-xl text-sm"
             />
-            <button
-              type="submit"
-              disabled={loading || !input.trim() || (!walletConnected && questionCount >= 5)}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold disabled:opacity-50"
-            >
+            <button type="submit" disabled={loading || !input.trim() || (!walletConnected && questionCount >= 5)} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold disabled:opacity-50">
               {loading ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <Send className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
           </form>
+          <div className="flex justify-center items-center gap-3 mt-2 text-[9px] sm:text-xs text-purple-400">
+            <a href="/privacy.html" className="hover:text-white">Privacy Policy</a>
+            <span>•</span>
+            <a href="/terms.html" className="hover:text-white">Terms of Service</a>
+            <span>•</span>
+            <a href="/copyright.html" className="hover:text-white">Copyright</a>
+          </div>
         </div>
       </div>
     </div>
