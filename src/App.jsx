@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Wallet, Sparkles, Send, Home, User, LogOut, Loader2, Twitter, Youtube, Video, Instagram, Linkedin, Calendar, ChevronDown, ExternalLink, MessageSquare, Plus, Trash2, Gift, Trophy, Medal, X } from 'lucide-react';
+import { getWallets } from '@wallet-standard/app';
 import {   
   createDefaultAuthorizationCache,   
   createDefaultChainSelector,   
@@ -37,9 +38,27 @@ function App() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [standardWallets, setStandardWallets] = useState([]);
   const messagesEndRef = useRef(null);
   const hasTrackedSession = useRef(false);
 
+  // Initialize wallet standard detection
+  useEffect(() => {
+    const { get, on } = getWallets();
+    
+    // Get initial wallets
+    const wallets = get();
+    setStandardWallets(wallets);
+    
+    // Listen for new wallets
+    const removeListener = on('register', () => {
+      setStandardWallets(get());
+    });
+    
+    return () => removeListener();
+  }, []);
+
+  // Register MWA for Solana Mobile
   useEffect(() => {
     registerMwa({  
       appIdentity: { name: 'SMSai', uri: 'https://smsai.fun', icon: '/icon-512.png' },      
@@ -57,8 +76,16 @@ function App() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Find Jupiter wallet from wallet standard
+  const findJupiterWallet = useCallback(() => {
+    return standardWallets.find(w => 
+      w.name?.toLowerCase().includes('jupiter') || 
+      w.name?.toLowerCase() === 'jup'
+    );
+  }, [standardWallets]);
+
   const walletOptions = useMemo(() => [
-    { id: 'jupiter', name: 'Jupiter', window: 'jupiterWallet', check: (w) => !!w, mobileLink: 'https://jup.ag/onboard', downloadUrl: 'https://chromewebstore.google.com/detail/jupiter-wallet/iledlaeogohbilgbfhmbgkgmpplbfboh' },
+    { id: 'jupiter', name: 'Jupiter', useStandard: true, mobileLink: 'https://jup.ag/onboard', downloadUrl: 'https://chromewebstore.google.com/detail/jupiter-wallet/iledlaeogohbilgbfhmbgkgmpplbfboh' },
     { id: 'phantom', name: 'Phantom', window: 'solana', check: (w) => w?.isPhantom, mobileLink: 'https://phantom.app/ul/browse/https://smsai.fun', downloadUrl: 'https://phantom.app/' },
     { id: 'solflare', name: 'Solflare', window: 'solflare', check: (w) => !!w, mobileLink: 'https://solflare.com/ul/v1/browse/https://smsai.fun', downloadUrl: 'https://solflare.com/' },
     { id: 'backpack', name: 'Backpack', window: 'backpack', check: (w) => w?.isBackpack || (w && typeof w.connect === 'function'), mobileLink: 'https://backpack.app/ul/browse/https://smsai.fun', downloadUrl: 'https://backpack.app/' },
@@ -133,7 +160,7 @@ function App() {
 
   const formatTime = (date) => new Date(date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   const shortenAddress = (address) => `${address.slice(0, 4)}...${address.slice(-4)}`;
-  const isInWalletBrowser = () => !!(window.solana?.isPhantom || window.solflare || window.backpack || window.jupiterWallet);
+  const isInWalletBrowser = () => !!(window.solana?.isPhantom || window.solflare || window.backpack || findJupiterWallet());
 
   useEffect(() => {
     if (!hasTrackedSession.current) {
@@ -179,28 +206,81 @@ function App() {
     try {
       const walletConfig = walletOptions.find(w => w.id === walletName);
       if (!walletConfig) { alert('Unknown wallet type.'); return; }
-      const walletObj = window[walletConfig.window];
-      if (!walletObj || !walletConfig.check(walletObj)) {
-        if (isMobile && walletConfig.mobileLink) { window.location.href = walletConfig.mobileLink; return; }
-        window.open(walletConfig.downloadUrl, '_blank');
-        alert(`${walletConfig.name} not detected.\n\n1. Install from the opened page\n2. Refresh this page\n3. Try again`);
-        return;
+
+      let publicKey;
+
+      // Handle Jupiter via wallet standard
+      if (walletConfig.useStandard) {
+        const jupiterWallet = findJupiterWallet();
+        if (!jupiterWallet) {
+          if (isMobile && walletConfig.mobileLink) { window.location.href = walletConfig.mobileLink; return; }
+          window.open(walletConfig.downloadUrl, '_blank');
+          alert(`${walletConfig.name} not detected.\n\n1. Install from the opened page\n2. Refresh this page\n3. Try again`);
+          return;
+        }
+        
+        // Connect using wallet standard
+        const connectFeature = jupiterWallet.features['standard:connect'];
+        if (!connectFeature) throw new Error('Wallet does not support connect');
+        
+        const result = await connectFeature.connect();
+        if (result.accounts && result.accounts.length > 0) {
+          publicKey = result.accounts[0].address;
+        } else {
+          throw new Error('No accounts returned');
+        }
+      } else {
+        // Handle other wallets via window object
+        const walletObj = window[walletConfig.window];
+        if (!walletObj || !walletConfig.check(walletObj)) {
+          if (isMobile && walletConfig.mobileLink) { window.location.href = walletConfig.mobileLink; return; }
+          window.open(walletConfig.downloadUrl, '_blank');
+          alert(`${walletConfig.name} not detected.\n\n1. Install from the opened page\n2. Refresh this page\n3. Try again`);
+          return;
+        }
+        const response = await walletObj.connect();
+        publicKey = walletName === 'solflare' ? (walletObj.publicKey || response?.publicKey) : (response?.publicKey || walletObj.publicKey);
+        if (publicKey && typeof publicKey !== 'string') {
+          publicKey = publicKey.toString();
+        }
       }
-      const response = await walletObj.connect();
-      let publicKey = walletName === 'solflare' ? (walletObj.publicKey || response?.publicKey) : (response?.publicKey || walletObj.publicKey);
+
       if (!publicKey) throw new Error('Could not find public key');
       const address = typeof publicKey === 'string' ? publicKey : publicKey.toString();
+      
       const userData = await loadUserData(address);
       let newXP = 0, newQuestionCount = 0, message = '';
-      if (userData) { newXP = userData.xp || 0; newQuestionCount = userData.questions_asked || 0; message = `Welcome back! You have ${newXP} XP`; }
-      else { newXP = 20; newQuestionCount = 0; try { await syncUserData(address, { wallet_type: walletName, xp: 20, questions_asked: 0 }); message = 'Wallet connected! +20 XP welcome bonus'; } catch { alert('Connected but failed to save to database. You may need to reconnect.'); return; } }
-      setWalletAddress(address); setWalletConnected(true); setWalletType(walletName); setUserXP(newXP); setQuestionCount(newQuestionCount);
-      setShowWalletPrompt(false); setShowWalletMenu(false);
-      localStorage.setItem('smsai_wallet', address); localStorage.setItem('smsai_wallet_type', walletName);
-      setConnectionMessage(message); setTimeout(() => setConnectionMessage(''), 5000);
+      if (userData) { 
+        newXP = userData.xp || 0; 
+        newQuestionCount = userData.questions_asked || 0; 
+        message = `Welcome back! You have ${newXP} XP`; 
+      } else { 
+        newXP = 20; 
+        newQuestionCount = 0; 
+        try { 
+          await syncUserData(address, { wallet_type: walletName, xp: 20, questions_asked: 0 }); 
+          message = 'Wallet connected! +20 XP welcome bonus'; 
+        } catch { 
+          alert('Connected but failed to save to database. You may need to reconnect.'); 
+          return; 
+        } 
+      }
+      
+      setWalletAddress(address); 
+      setWalletConnected(true); 
+      setWalletType(walletName); 
+      setUserXP(newXP); 
+      setQuestionCount(newQuestionCount);
+      setShowWalletPrompt(false); 
+      setShowWalletMenu(false);
+      localStorage.setItem('smsai_wallet', address); 
+      localStorage.setItem('smsai_wallet_type', walletName);
+      setConnectionMessage(message); 
+      setTimeout(() => setConnectionMessage(''), 5000);
       loadChats(address);
     } catch (error) {
-      if (error.message?.includes('User rejected')) alert('Connection cancelled.');
+      console.error('Wallet connection error:', error);
+      if (error.message?.includes('User rejected') || error.message?.includes('rejected')) alert('Connection cancelled.');
       else if (error.code === 4001) alert('Connection rejected. Please approve in your wallet.');
       else alert(`Connection failed: ${error.message || 'Unknown error'}`);
     }
@@ -250,7 +330,6 @@ function App() {
         </div>
       )}
 
-      {/* Leaderboard Modal */}
       {showLeaderboard && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-gradient-to-br from-slate-900 to-purple-900 border border-purple-500/30 rounded-2xl p-4 sm:p-6 max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col">
