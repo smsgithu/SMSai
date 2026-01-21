@@ -84,7 +84,17 @@ function App() {
     );
   }, [standardWallets]);
 
+  // Find MWA/Seed Vault wallet from wallet standard
+  const findMwaWallet = useCallback(() => {
+    return standardWallets.find(w => 
+      w.name?.toLowerCase().includes('mobile wallet adapter') || 
+      w.name?.toLowerCase().includes('seed vault') ||
+      w.name?.toLowerCase().includes('mwa')
+    );
+  }, [standardWallets]);
+
   const walletOptions = useMemo(() => [
+    { id: 'seedvault', name: 'Seed Vault', useStandard: true, isMwa: true },
     { id: 'jupiter', name: 'Jupiter', useStandard: true, mobileLink: 'https://jup.ag/onboard', downloadUrl: 'https://chromewebstore.google.com/detail/jupiter-wallet/iledlaeogohbilgbfhmbgkgmpplbfboh' },
     { id: 'phantom', name: 'Phantom', window: 'solana', check: (w) => w?.isPhantom, mobileLink: 'https://phantom.app/ul/browse/https://smsai.fun', downloadUrl: 'https://phantom.app/' },
     { id: 'solflare', name: 'Solflare', window: 'solflare', check: (w) => !!w, mobileLink: 'https://solflare.com/ul/v1/browse/https://smsai.fun', downloadUrl: 'https://solflare.com/' },
@@ -209,8 +219,27 @@ function App() {
 
       let publicKey;
 
+      // Handle Seed Vault / MWA via wallet standard
+      if (walletConfig.isMwa) {
+        const mwaWallet = findMwaWallet();
+        if (!mwaWallet) {
+          alert('Seed Vault / Mobile Wallet Adapter not available.\n\nThis wallet is only available on Solana Mobile devices with Seed Vault enabled.');
+          return;
+        }
+        
+        // Connect using wallet standard
+        const connectFeature = mwaWallet.features['standard:connect'];
+        if (!connectFeature) throw new Error('Wallet does not support connect');
+        
+        const result = await connectFeature.connect();
+        if (result.accounts && result.accounts.length > 0) {
+          publicKey = result.accounts[0].address;
+        } else {
+          throw new Error('No accounts returned');
+        }
+      }
       // Handle Jupiter via wallet standard
-      if (walletConfig.useStandard) {
+      else if (walletConfig.useStandard) {
         const jupiterWallet = findJupiterWallet();
         if (!jupiterWallet) {
           if (isMobile && walletConfig.mobileLink) { window.location.href = walletConfig.mobileLink; return; }
@@ -406,12 +435,23 @@ function App() {
               <p className="text-purple-200 text-sm mb-2">You've explored 5 questions! 🎉 To keep learning about Solana, Web3, and crypto, connect your wallet.</p>
               <p className="text-xs text-purple-300/80 mb-4">It's 100% free, takes 30 seconds, and unlocks unlimited questions + XP rewards.</p>
               {isMobile && !isInWalletBrowser() && <div className="bg-blue-600/20 border border-blue-500/30 rounded-lg p-2 mb-3"><p className="text-xs text-blue-200">📱 Tap a wallet to open this site in that wallet's browser</p></div>}
+              
+              {/* Seed Vault / MWA - shown prominently when available */}
+              {findMwaWallet() && (
+                <div className="bg-green-800/30 border border-green-500/30 rounded-xl p-3 mb-4">
+                  <p className="text-xs text-green-300 font-medium mb-2">📱 Solana Mobile Detected!</p>
+                  <button onClick={() => connectWallet('seedvault')} className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl px-4 py-3 font-semibold hover:from-green-500 hover:to-emerald-500 flex items-center justify-center gap-2 text-sm">
+                    <Wallet className="w-4 h-4" />Connect with Seed Vault
+                  </button>
+                </div>
+              )}
+              
               <div className="bg-purple-800/30 border border-purple-500/20 rounded-xl p-3 mb-4">
-                <p className="text-xs text-white font-medium mb-2">Already have a wallet? Select it below:</p>
+                <p className="text-xs text-white font-medium mb-2">{findMwaWallet() ? 'Or select another wallet:' : 'Already have a wallet? Select it below:'}</p>
                 <div className="space-y-2">
-                  {walletOptions.map((wallet) => (
+                  {walletOptions.filter(w => !w.isMwa).map((wallet) => (
                     <button key={wallet.id} onClick={() => connectWallet(wallet.id)} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-4 py-2.5 font-semibold hover:from-purple-500 hover:to-pink-500 flex items-center justify-center gap-2 text-sm">
-                      <Wallet className="w-4 h-4" />{wallet.name}{isMobile && !isInWalletBrowser() && <ExternalLink className="w-3 h-3 opacity-60" />}
+                      <Wallet className="w-4 h-4" />{wallet.name}{isMobile && !isInWalletBrowser() && !wallet.isMwa && <ExternalLink className="w-3 h-3 opacity-60" />}
                     </button>
                   ))}
                 </div>
