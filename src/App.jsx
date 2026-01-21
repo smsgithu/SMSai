@@ -95,10 +95,10 @@ function App() {
 
   const walletOptions = useMemo(() => [
     { id: 'seedvault', name: 'Seed Vault', useStandard: true, isMwa: true },
-    { id: 'jupiter', name: 'Jupiter', useStandard: true, mobileLink: 'https://jup.ag/onboard', downloadUrl: 'https://chromewebstore.google.com/detail/jupiter-wallet/iledlaeogohbilgbfhmbgkgmpplbfboh' },
+    { id: 'jupiter', name: 'Jupiter', useStandard: true, mobileLink: null, downloadUrl: 'https://chromewebstore.google.com/detail/jupiter-wallet/iledlaeogohbilgbfhmbgkgmpplbfboh' },
     { id: 'phantom', name: 'Phantom', window: 'solana', check: (w) => w?.isPhantom, mobileLink: 'https://phantom.app/ul/browse/https://smsai.fun', downloadUrl: 'https://phantom.app/' },
-    { id: 'solflare', name: 'Solflare', window: 'solflare', check: (w) => !!w, mobileLink: 'https://solflare.com/ul/v1/browse/https://smsai.fun', downloadUrl: 'https://solflare.com/' },
-    { id: 'backpack', name: 'Backpack', window: 'backpack', check: (w) => w?.isBackpack || (w && typeof w.connect === 'function'), mobileLink: 'https://backpack.app/ul/browse/https://smsai.fun', downloadUrl: 'https://backpack.app/' },
+    { id: 'solflare', name: 'Solflare', window: 'solflare', check: (w) => !!w, mobileLink: `https://solflare.com/ul/v1/browse/${encodeURIComponent('https://smsai.fun')}?ref=${encodeURIComponent('https://smsai.fun')}`, downloadUrl: 'https://solflare.com/' },
+    { id: 'backpack', name: 'Backpack', window: 'backpack', check: (w) => w?.isBackpack || (w && typeof w.connect === 'function'), mobileLink: `https://backpack.app/ul/v1/browse/${encodeURIComponent('https://smsai.fun')}?ref=${encodeURIComponent('https://smsai.fun')}`, downloadUrl: 'https://backpack.app/' },
   ], []);
 
   const syncUserData = async (walletAddr, updates = {}) => {
