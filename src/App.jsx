@@ -42,6 +42,13 @@ function App() {
   const messagesEndRef = useRef(null);
   const hasTrackedSession = useRef(false);
 
+  // Haptic feedback for touch interactions
+  const haptic = (duration = 10) => {
+    if (navigator.vibrate) {
+      navigator.vibrate(duration);
+    }
+  };
+
   // Initialize wallet standard detection
   useEffect(() => {
     const { get, on } = getWallets();
@@ -440,7 +447,7 @@ function App() {
               {findMwaWallet() && (
                 <div className="bg-green-800/30 border border-green-500/30 rounded-xl p-3 mb-4">
                   <p className="text-xs text-green-300 font-medium mb-2">📱 Solana Mobile Detected!</p>
-                  <button onClick={() => connectWallet('seedvault')} className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl px-4 py-3 font-semibold hover:from-green-500 hover:to-emerald-500 flex items-center justify-center gap-2 text-sm">
+                  <button onClick={() => { haptic(); connectWallet('seedvault'); }} className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl px-4 py-3 font-semibold hover:from-green-500 hover:to-emerald-500 flex items-center justify-center gap-2 text-sm">
                     <Wallet className="w-4 h-4" />Connect with Seed Vault
                   </button>
                 </div>
@@ -450,7 +457,7 @@ function App() {
                 <p className="text-xs text-white font-medium mb-2">{findMwaWallet() ? 'Or select another wallet:' : 'Already have a wallet? Select it below:'}</p>
                 <div className="space-y-2">
                   {walletOptions.filter(w => !w.isMwa).map((wallet) => (
-                    <button key={wallet.id} onClick={() => connectWallet(wallet.id)} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-4 py-2.5 font-semibold hover:from-purple-500 hover:to-pink-500 flex items-center justify-center gap-2 text-sm">
+                    <button key={wallet.id} onClick={() => { haptic(); connectWallet(wallet.id); }} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-4 py-2.5 font-semibold hover:from-purple-500 hover:to-pink-500 flex items-center justify-center gap-2 text-sm">
                       <Wallet className="w-4 h-4" />{wallet.name}{isMobile && !isInWalletBrowser() && !wallet.isMwa && <ExternalLink className="w-3 h-3 opacity-60" />}
                     </button>
                   ))}
@@ -495,12 +502,12 @@ function App() {
         <div className="w-full max-w-4xl">
           <div className="block sm:hidden mb-3">
             <div className="flex items-center gap-2 mb-2">
-              {walletConnected && <button onClick={() => setShowChatHistory(true)} className="flex items-center gap-1 p-1.5 bg-purple-600/30 rounded-lg border border-purple-500/30"><MessageSquare className="w-4 h-4 text-purple-300" /><span className="text-[9px] text-purple-300">History</span></button>}
+              {walletConnected && <button onClick={() => { haptic(); setShowChatHistory(true); }} className="flex items-center gap-1 p-1.5 bg-purple-600/30 rounded-lg border border-purple-500/30"><MessageSquare className="w-4 h-4 text-purple-300" /><span className="text-[9px] text-purple-300">History</span></button>}
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0"><Sparkles className="w-4 h-4 text-white" /></div>
               <div className="flex-1 min-w-0"><h1 className="text-base font-bold text-white leading-tight">smsai.fun</h1><p className="text-[10px] text-purple-300">Your AI Guide to Solana</p></div>
               {walletConnected ? (
                 <button onClick={() => setShowWalletMenu(!showWalletMenu)} className="flex items-center gap-1 bg-purple-600/30 px-2 py-1 rounded-lg border border-purple-500/30"><User className="w-3 h-3 text-purple-300" /><span className="text-[9px] text-white">{shortenAddress(walletAddress)}</span><ChevronDown className="w-3 h-3 text-purple-300" /></button>
-              ) : <button onClick={() => setShowWalletPrompt(true)} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2.5 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1"><Wallet className="w-3 h-3" />Connect</button>}
+              ) : <button onClick={() => { haptic(); setShowWalletPrompt(true); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2.5 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1"><Wallet className="w-3 h-3" />Connect</button>}
             </div>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -515,7 +522,7 @@ function App() {
           <div className="hidden sm:block">
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-3">
-                {walletConnected && <button onClick={() => setShowChatHistory(true)} className="flex items-center gap-2 p-2 bg-purple-600/30 rounded-xl border border-purple-500/30 hover:bg-purple-600/50" title="Chat History"><MessageSquare className="w-5 h-5 text-purple-300" /><span className="text-xs text-purple-300">Chat History</span></button>}
+                {walletConnected && <button onClick={() => { haptic(); setShowChatHistory(true); }} className="flex items-center gap-2 p-2 bg-purple-600/30 rounded-xl border border-purple-500/30 hover:bg-purple-600/50" title="Chat History"><MessageSquare className="w-5 h-5 text-purple-300" /><span className="text-xs text-purple-300">Chat History</span></button>}
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center"><Sparkles className="w-6 h-6 text-white" /></div>
                 <div><h1 className="text-2xl font-bold text-white">smsai.fun</h1><p className="text-sm text-purple-300">Your AI Guide to the Solana Ecosystem</p></div>
               </div>
@@ -532,7 +539,7 @@ function App() {
                     <button onClick={() => setShowWalletMenu(!showWalletMenu)} className="flex items-center gap-2 bg-gradient-to-r from-purple-600/30 to-pink-600/30 px-3 py-2 rounded-xl border border-purple-500/30 hover:border-purple-500/50"><User className="w-4 h-4 text-purple-300" /><div className="text-left"><div className="text-xs text-white font-medium">{shortenAddress(walletAddress)}</div><div className="text-[10px] text-purple-300">{userXP} XP • {questionCount} questions</div></div><ChevronDown className="w-4 h-4 text-purple-300" /></button>
                     {showWalletMenu && <div className="absolute right-0 top-full mt-2 bg-slate-900 border border-purple-500/30 rounded-xl shadow-lg z-50 min-w-[160px]"><button onClick={disconnectWallet} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10"><LogOut className="w-4 h-4" />Disconnect</button></div>}
                   </div>
-                ) : <button onClick={() => setShowWalletPrompt(true)} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:from-purple-500 hover:to-pink-500 flex items-center gap-2"><Wallet className="w-4 h-4" />Connect Wallet</button>}
+                ) : <button onClick={() => { haptic(); setShowWalletPrompt(true); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:from-purple-500 hover:to-pink-500 flex items-center gap-2"><Wallet className="w-4 h-4" />Connect Wallet</button>}
               </div>
             </div>
           </div>
@@ -541,10 +548,10 @@ function App() {
             <div className="mb-3 sm:mb-6">
               <p className="text-[10px] sm:text-sm text-purple-300 mb-2 text-center">Quick start:</p>
               <div className="grid grid-cols-2 gap-1.5 sm:gap-3 max-w-2xl mx-auto">
-                <button onClick={() => handleSubmit('How do wallets work?')} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium text-[10px] sm:text-base text-left flex items-center gap-1.5 sm:gap-3"><Wallet className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /><span>How do wallets work?</span></button>
-                <button onClick={() => handleSubmit('What is a seed phrase?')} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium text-[10px] sm:text-base text-left flex items-center gap-1.5 sm:gap-3"><Sparkles className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /><span>What is a seed phrase?</span></button>
-                <button onClick={() => handleSubmit('Explain DeFi and staking')} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium text-[10px] sm:text-base text-left flex items-center gap-1.5 sm:gap-3"><Sparkles className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /><span>DeFi and staking</span></button>
-                <button onClick={() => handleSubmit('How do Solana memecoins work?')} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium text-[10px] sm:text-base text-left flex items-center gap-1.5 sm:gap-3"><Sparkles className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /><span>Solana memecoins</span></button>
+                <button onClick={() => { haptic(); handleSubmit('How do wallets work?'); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium text-[10px] sm:text-base text-left flex items-center gap-1.5 sm:gap-3"><Wallet className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /><span>How do wallets work?</span></button>
+                <button onClick={() => { haptic(); handleSubmit('What is a seed phrase?'); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium text-[10px] sm:text-base text-left flex items-center gap-1.5 sm:gap-3"><Sparkles className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /><span>What is a seed phrase?</span></button>
+                <button onClick={() => { haptic(); handleSubmit('Explain DeFi and staking'); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium text-[10px] sm:text-base text-left flex items-center gap-1.5 sm:gap-3"><Sparkles className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /><span>DeFi and staking</span></button>
+                <button onClick={() => { haptic(); handleSubmit('How do Solana memecoins work?'); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium text-[10px] sm:text-base text-left flex items-center gap-1.5 sm:gap-3"><Sparkles className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /><span>Solana memecoins</span></button>
               </div>
             </div>
           )}
@@ -578,9 +585,9 @@ function App() {
             </div>
           )}
           <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="flex gap-1.5 sm:gap-2">
-            {messages.length > 1 && <button type="button" onClick={startNewChat} className="bg-purple-600/50 hover:bg-purple-600 text-white p-2 sm:p-3 rounded-lg sm:rounded-xl" title="New Chat"><Home className="w-4 h-4 sm:w-5 sm:h-5" /></button>}
+            {messages.length > 1 && <button type="button" onClick={() => { haptic(); startNewChat(); }} className="bg-purple-600/50 hover:bg-purple-600 text-white p-2 sm:p-3 rounded-lg sm:rounded-xl" title="New Chat"><Home className="w-4 h-4 sm:w-5 sm:h-5" /></button>}
             <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder={!walletConnected && questionCount >= 5 ? "Connect wallet..." : "Ask about Solana..."} disabled={loading || (!walletConnected && questionCount >= 5)} className="flex-1 bg-white/10 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 px-3 py-2 sm:py-3 rounded-lg sm:rounded-xl text-sm" />
-            <button type="submit" disabled={loading || !input.trim() || (!walletConnected && questionCount >= 5)} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold disabled:opacity-50">{loading ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <Send className="w-4 h-4 sm:w-5 sm:h-5" />}</button>
+            <button type="submit" disabled={loading || !input.trim() || (!walletConnected && questionCount >= 5)} onClick={() => haptic()} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold disabled:opacity-50">{loading ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <Send className="w-4 h-4 sm:w-5 sm:h-5" />}</button>
           </form>
           <div className="flex justify-center items-center gap-2 sm:gap-3 mt-2 text-[9px] sm:text-xs text-purple-400">
             <a href="/privacy.html" className="hover:text-white">Privacy</a>
@@ -589,7 +596,7 @@ function App() {
             <span>•</span>
             <a href="/copyright.html" className="hover:text-white">Copyright</a>
             <span>•</span>
-            <button onClick={openLeaderboard} className="flex items-center gap-1 bg-gradient-to-r from-yellow-600/30 to-orange-600/30 hover:from-yellow-600/50 hover:to-orange-600/50 border border-yellow-500/40 px-2 py-0.5 rounded-full text-yellow-300 hover:text-yellow-200 font-medium transition-all">
+            <button onClick={() => { haptic(); openLeaderboard(); }} className="flex items-center gap-1 bg-gradient-to-r from-yellow-600/30 to-orange-600/30 hover:from-yellow-600/50 hover:to-orange-600/50 border border-yellow-500/40 px-2 py-0.5 rounded-full text-yellow-300 hover:text-yellow-200 font-medium transition-all">
               <Trophy className="w-3 h-3" />
               <span>Leaderboard</span>
             </button>
