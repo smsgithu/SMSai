@@ -111,7 +111,7 @@ function App() {
       useStandard: true, 
       mobileLink: isIOS
         ? 'jupiter://browse/https://smsai.fun'
-        : 'intent://browse?url=https%3A%2F%2Fsmsai.fun#Intent;scheme=jupiter;package=ag.jup.jupiter.android;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dag.jup.jupiter.android;end',
+        : 'intent://browse/https://smsai.fun#Intent;scheme=jupiter;package=ag.jup.jupiter.android;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dag.jup.jupiter.android;end',
       downloadUrl: 'https://chromewebstore.google.com/detail/jupiter-wallet/iledlaeogohbilgbfhmbgkgmpplbfboh' 
     },
     { id: 'phantom', name: 'Phantom', window: 'solana', check: (w) => w?.isPhantom, mobileLink: `https://phantom.app/ul/browse/${encodeURIComponent('https://smsai.fun')}?ref=${encodeURIComponent('https://smsai.fun')}`, downloadUrl: 'https://phantom.app/' },
