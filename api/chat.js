@@ -13,49 +13,126 @@ const SOLANA_KNOWLEDGE = `
 - Uses Proof of History (PoH) + Proof of Stake (PoS)
 - ~400ms block time, 65,000+ TPS theoretical, ~$0.00025 per transaction
 - SOL token: pay fees, stake for 6-8% APY, governance
+- Current SOL price range: ~$200-300 (as of late 2025/early 2026)
+
+## Solana Mobile
+- **Solana Seeker** (2025): The second-generation Solana Mobile phone
+  - Successor to the original Saga phone
+  - More affordable than Saga, aimed at mainstream adoption
+  - Built-in Seed Vault for secure key storage
+  - Native support for Mobile Wallet Adapter (MWA)
+  - Comes with exclusive token airdrops and rewards for owners
+  - Features Android-based OS optimized for Web3
+  - Integrated dApp Store for discovering Solana apps
+- **Saga** (2023): First-generation Solana phone, famous for BONK airdrop that made it valuable
+- **Seed Vault**: Hardware-level secure enclave on Solana Mobile devices for storing private keys
+- **Mobile Wallet Adapter (MWA)**: Protocol for connecting dApps to mobile wallets securely
 
 ## Wallets
-- Phantom (most popular), Solflare, Backpack, Glow
+- **Phantom**: Most popular Solana wallet, browser extension + mobile app, supports Ethereum too
+- **Solflare**: Solana-native wallet, excellent staking features, mobile + extension
+- **Backpack**: By Mad Lads team, supports xNFTs (executable NFTs)
+- **Jupiter Mobile**: Jupiter's own wallet app with built-in swap functionality
+- **Glow**: Fast, lightweight Solana wallet
 - Seed phrase: 12-24 words, NEVER share, store offline securely
 - Hardware wallets (Ledger) recommended for large amounts
 
 ## DeFi Ecosystem
-- DEXs: Jupiter (aggregator), Raydium, Orca, OpenBook
-- Lending: Kamino, Marginfi, Solend
-- Liquid Staking: Marinade (mSOL), Jito (JitoSOL), BlazeStake (bSOL)
+**DEXs & Aggregators:**
+- Jupiter: #1 DEX aggregator, routes through all DEXs for best price, JUP governance token
+- Raydium: AMM with concentrated liquidity, RAY token
+- Orca: User-friendly AMM, Whirlpools concentrated liquidity
+- OpenBook: On-chain order book (successor to Serum)
+- Phoenix: High-performance order book DEX
+
+**Lending & Borrowing:**
+- Kamino: Leading DeFi hub, lending, liquidity, and leverage
+- Marginfi: Lending protocol with points program
+- Solend: Original Solana lending protocol
+
+**Liquid Staking:**
+- Jito (JitoSOL): Liquid staking with MEV rewards, very popular
+- Marinade (mSOL): Decentralized stake pool, mSOL token
+- BlazeStake (bSOL): Community-focused liquid staking
+- Sanctum: LST aggregator, create custom LSTs, INF token
+
+**Perpetuals & Trading:**
+- Drift: Perpetual futures DEX
+- Jupiter Perps: Perpetual trading on Jupiter
+- Zeta Markets: Options and perpetuals
 
 ## Staking
-- Native: Delegate to validator, ~6-8% APY, 2-3 day unstaking
-- Liquid: Get mSOL/JitoSOL, use in DeFi while earning, instant liquidity
+- **Native Staking**: Delegate SOL to validator, ~6-8% APY, 2-3 day unstaking period
+- **Liquid Staking**: Get JitoSOL/mSOL/bSOL, use in DeFi while earning staking rewards
 - Choose validators by: uptime, commission (avoid 100%), stake distribution
+- Jito offers additional MEV rewards on top of base staking APY
 
-## NFTs
-- Marketplaces: Magic Eden, Tensor
-- Compressed NFTs (cNFTs) = 1000x cheaper to mint
+## NFTs & Digital Collectibles
+- **Magic Eden**: Largest NFT marketplace, expanded to multi-chain
+- **Tensor**: Pro trading NFT marketplace, TNSR token, advanced trading features
+- **Compressed NFTs (cNFTs)**: 1000x cheaper to mint using state compression
+- **xNFTs**: Executable NFTs that run code (Backpack ecosystem)
+- Popular collections: Mad Lads, Tensorians, Famous Fox Federation, Claynosaurz
 
-## Memecoins
-- SPL tokens, often on pump.fun
+## Memecoins & Token Launches
+- **pump.fun**: Popular platform for launching memecoins on Solana, bonding curve mechanism
+- **Moonshot**: Another memecoin launchpad
+- Popular memecoins: BONK (Solana's first big memecoin), WIF (dogwifhat), POPCAT, PENGU
 - HIGH RISK: rug pulls, pump & dumps, no intrinsic value
-- Popular: BONK, WIF (dogwifhat), POPCAT
+- Always research before buying, never invest more than you can lose
+- Check if liquidity is locked/burned, verify contract on Solscan
 
-## Security
-- Never share seed phrase or private keys
-- Verify URLs before connecting
-- No legit project DMs you first
-- "Too good to be true" = scam
-- Use burner wallets for risky activities
+## Solana Ecosystem Projects
+- **Jupiter**: DEX aggregator, JUP token, perps, limit orders, DCA
+- **Jito**: MEV infrastructure, liquid staking (JitoSOL), JTO token
+- **Marinade**: Liquid staking pioneer, mSOL, MNDE token
+- **Tensor**: NFT marketplace, TNSR token
+- **Helium**: Decentralized wireless network, migrated to Solana (HNT, MOBILE, IOT)
+- **Render**: Decentralized GPU rendering, RNDR token on Solana
+- **Pyth**: Oracle network providing price feeds
+- **Wormhole**: Cross-chain bridge protocol, W token
+- **Bonk**: Community memecoin, gained fame from Saga phone airdrop
 
-## Key Projects
-- Jupiter (DEX aggregator, JUP token)
-- Marinade (liquid staking)
-- Magic Eden & Tensor (NFTs)
-- Drift (perpetuals)
-- Kamino (DeFi hub)
+## Blinks & Actions
+- **Solana Actions**: URLs that trigger Solana transactions
+- **Blinks** (Blockchain Links): Share Actions anywhere on the internet
+- Allows transactions directly from social media, websites, etc.
+- Example: Tip someone SOL directly from a tweet
 
-## Resources
-- solana.com, docs.solana.com
-- solscan.io (explorer)
-- step.finance (portfolio)
+## Security Best Practices
+- NEVER share your seed phrase or private keys with anyone
+- Verify URLs before connecting wallet (phishing is common)
+- No legitimate project will DM you first asking to connect wallet
+- "Too good to be true" returns = almost certainly a scam
+- Use burner wallets for risky activities (airdrops, new mints)
+- Revoke unused token approvals regularly
+- Enable transaction simulation in your wallet
+- Be wary of fake airdrops and token approvals
+
+## Solana Technical Features
+- **Firedancer**: New validator client by Jump Crypto for better performance
+- **Token Extensions**: Advanced token features (transfer fees, confidential transfers, etc.)
+- **Compressed NFTs**: State compression for 1000x cheaper NFTs
+- **Priority Fees**: Pay extra to prioritize transactions during congestion
+- **Compute Units**: Measure of computational resources per transaction
+
+## Key Resources
+- solana.com - Official website
+- docs.solana.com - Developer documentation
+- solscan.io - Block explorer (view transactions, tokens, wallets)
+- solana.fm - Alternative block explorer
+- step.finance - Portfolio tracker
+- birdeye.so - Token analytics and charts
+- dexscreener.com - DEX analytics
+- helius.dev - RPC and developer tools
+
+## Current Trends (Late 2025/Early 2026)
+- Solana Mobile expanding with Seeker phone
+- Memecoins continue to be popular but risky
+- DeFi TVL growing with new protocols
+- Institutional interest increasing
+- Focus on mobile-first Web3 experiences
+- Blinks enabling social commerce
 `;
 
 const SYSTEM_PROMPT = `You are SMSai, a friendly and knowledgeable AI assistant created by Solana Made Simple (SMS). Your mission is to help people understand Solana and crypto in simple, approachable terms.
@@ -73,9 +150,10 @@ ${SOLANA_KNOWLEDGE}
 - Keep responses concise but complete
 - Use bullet points for lists
 - Bold **key terms** when introducing them
-- If asked about specific prices or current events, acknowledge you may not have real-time data
+- If asked about specific prices or current events, acknowledge your knowledge has limits
 - For wallet/security questions, always emphasize seed phrase safety
 - When discussing memecoins, always mention the risks
+- If users ask about Solana Seeker or Solana Mobile, you know about these!
 
 ## What You Can Help With
 - Explaining Solana concepts (wallets, staking, DeFi, NFTs)
@@ -83,6 +161,7 @@ ${SOLANA_KNOWLEDGE}
 - Understanding risks and security
 - Comparing protocols and options
 - Troubleshooting common issues
+- Solana Mobile devices (Seeker, Saga, Seed Vault)
 
 ## What to Avoid
 - Specific investment advice ("you should buy X")
