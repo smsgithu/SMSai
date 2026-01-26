@@ -126,13 +126,30 @@ const SOLANA_KNOWLEDGE = `
 - dexscreener.com - DEX analytics
 - helius.dev - RPC and developer tools
 
+## DATs (Digital Asset Treasuries)
+- **What are DATs?**: Publicly traded companies that hold cryptocurrency (like SOL) on their balance sheets as a core treasury strategy
+- Similar to how MicroStrategy pioneered Bitcoin treasuries, DATs now exist for Solana, Ethereum, and other assets
+- Investors buy stock in DAT companies to gain exposure to crypto without holding it directly
+- **How DATs work**: Raise capital through stock/bond sales → Buy and hold crypto → Often stake holdings for additional yield
+- **Top Solana DATs** (as of late 2025):
+  - Forward Industries: Largest SOL holder (~6.9M SOL, ~1.1% of supply)
+  - DeFi Development Corp (DFDV): First public company focused on SOL accumulation
+  - Upexi: ~2M SOL holdings
+  - Sharps Technology: ~2M SOL holdings
+  - Solana Company (HSDT): Backed by Pantera, targeting 5% of SOL supply
+- **Why companies choose SOL**: Staking rewards (6-8% APY), high-performance blockchain, growing ecosystem
+- **Risks**: Price volatility can cause large unrealized losses, dilution from stock issuance
+- Solana DATs collectively hold ~15M+ SOL (~2.5% of total supply)
+- DATs differ from ETFs: actively managed, can use leverage, stake holdings, pursue M&A
+
 ## Current Trends (Late 2025/Early 2026)
 - Solana Mobile expanding with Seeker phone
 - Memecoins continue to be popular but risky
 - DeFi TVL growing with new protocols
-- Institutional interest increasing
+- Institutional interest increasing via DATs and upcoming ETFs
 - Focus on mobile-first Web3 experiences
 - Blinks enabling social commerce
+- DAT companies accumulating significant SOL supply
 `;
 
 const SYSTEM_PROMPT = `You are SMSai, a friendly and knowledgeable AI assistant created by Solana Made Simple (SMS). Your mission is to help people understand Solana and crypto in simple, approachable terms.
@@ -150,10 +167,17 @@ ${SOLANA_KNOWLEDGE}
 - Keep responses concise but complete
 - Use bullet points for lists
 - Bold **key terms** when introducing them
-- If asked about specific prices or current events, acknowledge your knowledge has limits
 - For wallet/security questions, always emphasize seed phrase safety
 - When discussing memecoins, always mention the risks
 - If users ask about Solana Seeker or Solana Mobile, you know about these!
+
+## When to Use Web Search
+- Questions about current prices, market data, or "right now" info
+- Recent news, announcements, or events you're unsure about
+- New projects, tokens, or protocols not in your knowledge base
+- Anything where the user asks "latest" or "current" or "today"
+- When you're not confident your knowledge is up-to-date
+- Do NOT search for basic concepts you already know (wallets, staking, DeFi basics)
 
 ## What You Can Help With
 - Explaining Solana concepts (wallets, staking, DeFi, NFTs)
@@ -206,12 +230,26 @@ export default async function handler(req, res) {
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
+      max_tokens: 2048,
       system: contextualSystemPrompt,
-      messages: formattedMessages
+      messages: formattedMessages,
+      tools: [{
+        type: "web_search_20250305",
+        name: "web_search"
+      }]
     });
 
-    const content = response.content[0]?.text || "I'm sorry, I couldn't generate a response. Please try again.";
+    // Extract text content from response (may include web search results)
+    let content = "";
+    for (const block of response.content) {
+      if (block.type === "text") {
+        content += block.text;
+      }
+    }
+    
+    if (!content) {
+      content = "I'm sorry, I couldn't generate a response. Please try again.";
+    }
 
     return res.status(200).json({ content });
 
