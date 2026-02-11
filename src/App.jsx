@@ -39,8 +39,32 @@ function App() {
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [standardWallets, setStandardWallets] = useState([]);
+  const [quickStartQuestions, setQuickStartQuestions] = useState([]);
   const messagesEndRef = useRef(null);
   const hasTrackedSession = useRef(false);
+  const walletMenuRef = useRef(null);
+
+  // All possible quick start questions
+  const allQuickStartQuestions = [
+    { text: 'How do wallets work?', icon: 'wallet' },
+    { text: 'What is a seed phrase?', icon: 'sparkle' },
+    { text: 'Explain DeFi and staking', icon: 'sparkle' },
+    { text: 'How do Solana memecoins work?', icon: 'sparkle' },
+    { text: 'What makes Solana fast?', icon: 'sparkle' },
+    { text: 'How do NFTs work on Solana?', icon: 'sparkle' },
+    { text: 'What is a DEX?', icon: 'sparkle' },
+    { text: 'Explain Solana validators', icon: 'sparkle' },
+    { text: 'What are SPL tokens?', icon: 'sparkle' },
+    { text: 'How do I stay safe in crypto?', icon: 'wallet' },
+    { text: 'What is Jupiter Exchange?', icon: 'sparkle' },
+    { text: 'How does staking rewards work?', icon: 'sparkle' },
+  ];
+
+  // Randomly select 4 questions on mount
+  useEffect(() => {
+    const shuffled = [...allQuickStartQuestions].sort(() => Math.random() - 0.5);
+    setQuickStartQuestions(shuffled.slice(0, 4));
+  }, []);
 
   // Haptic feedback for touch interactions
   const haptic = (duration = 10) => {
@@ -48,6 +72,23 @@ function App() {
       navigator.vibrate(duration);
     }
   };
+
+  // Close wallet menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (walletMenuRef.current && !walletMenuRef.current.contains(event.target)) {
+        setShowWalletMenu(false);
+      }
+    };
+    if (showWalletMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showWalletMenu]);
 
   // Initialize wallet standard detection
   useEffect(() => {
@@ -100,24 +141,13 @@ function App() {
     );
   }, [standardWallets]);
 
-  // Detect iOS
-  const isIOS = useMemo(() => /iPhone|iPad|iPod/i.test(navigator.userAgent), []);
-
   const walletOptions = useMemo(() => [
     { id: 'seedvault', name: 'Seed Vault', useStandard: true, isMwa: true },
-    { 
-      id: 'jupiter', 
-      name: 'Jupiter', 
-      useStandard: true, 
-      mobileLink: isIOS
-        ? 'jupiter://browse/https://smsai.fun'
-        : 'intent://browse/https://smsai.fun#Intent;scheme=jupiter;package=ag.jup.jupiter.android;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dag.jup.jupiter.android;end',
-      downloadUrl: 'https://chromewebstore.google.com/detail/jupiter-wallet/iledlaeogohbilgbfhmbgkgmpplbfboh' 
-    },
+    { id: 'jupiter', name: 'Jupiter', useStandard: true, mobileLink: 'intent://browse?url=https%3A%2F%2Fsmsai.fun#Intent;scheme=jupiter;package=ag.jup.jupiter.android;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dag.jup.jupiter.android;end', downloadUrl: 'https://chromewebstore.google.com/detail/jupiter-wallet/iledlaeogohbilgbfhmbgkgmpplbfboh' },
     { id: 'phantom', name: 'Phantom', window: 'solana', check: (w) => w?.isPhantom, mobileLink: `https://phantom.app/ul/browse/${encodeURIComponent('https://smsai.fun')}?ref=${encodeURIComponent('https://smsai.fun')}`, downloadUrl: 'https://phantom.app/' },
     { id: 'solflare', name: 'Solflare', window: 'solflare', check: (w) => !!w, mobileLink: `https://solflare.com/ul/v1/browse/${encodeURIComponent('https://smsai.fun')}?ref=${encodeURIComponent('https://smsai.fun')}`, downloadUrl: 'https://solflare.com/' },
     { id: 'backpack', name: 'Backpack', window: 'backpack', check: (w) => w?.isBackpack || (w && typeof w.connect === 'function'), mobileLink: `https://backpack.app/ul/v1/browse/${encodeURIComponent('https://smsai.fun')}?ref=${encodeURIComponent('https://smsai.fun')}`, downloadUrl: 'https://backpack.app/' },
-  ], [isIOS]);
+  ], []);
 
   const syncUserData = async (walletAddr, updates = {}) => {
     try {
@@ -516,8 +546,12 @@ function App() {
               {walletConnected && <button onClick={() => { haptic(); setShowChatHistory(true); }} className="flex items-center gap-1 p-1.5 bg-purple-600/30 rounded-lg border border-purple-500/30"><MessageSquare className="w-4 h-4 text-purple-300" /><span className="text-[9px] text-purple-300">History</span></button>}
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0"><Sparkles className="w-4 h-4 text-white" /></div>
               <div className="flex-1 min-w-0"><h1 className="text-base font-bold text-white leading-tight">smsai.fun</h1><p className="text-[10px] text-purple-300">Your AI Guide to Solana</p></div>
+              <button onClick={() => { haptic(); openLeaderboard(); }} className="p-1.5 bg-gradient-to-r from-yellow-600/30 to-orange-600/30 border border-yellow-500/40 rounded-lg"><Trophy className="w-4 h-4 text-yellow-300" /></button>
               {walletConnected ? (
-                <button onClick={() => setShowWalletMenu(!showWalletMenu)} className="flex items-center gap-1 bg-purple-600/30 px-2 py-1 rounded-lg border border-purple-500/30"><User className="w-3 h-3 text-purple-300" /><span className="text-[9px] text-white">{shortenAddress(walletAddress)}</span><ChevronDown className="w-3 h-3 text-purple-300" /></button>
+                <div ref={walletMenuRef} className="relative">
+                  <button onClick={() => setShowWalletMenu(!showWalletMenu)} className="flex items-center gap-1 bg-purple-600/30 px-2 py-1 rounded-lg border border-purple-500/30"><User className="w-3 h-3 text-purple-300" /><span className="text-[9px] text-white">{shortenAddress(walletAddress)}</span><ChevronDown className="w-3 h-3 text-purple-300" /></button>
+                  {showWalletMenu && <div className="absolute right-0 top-full mt-1 bg-slate-900 border border-purple-500/30 rounded-lg shadow-lg z-50 min-w-[120px]"><div className="px-3 py-1.5 border-b border-purple-500/20 text-[10px] text-purple-300">{userXP} XP • {questionCount} questions</div><button onClick={disconnectWallet} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10"><LogOut className="w-3 h-3" />Disconnect</button></div>}
+                </div>
               ) : <button onClick={() => { haptic(); setShowWalletPrompt(true); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2.5 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1"><Wallet className="w-3 h-3" />Connect</button>}
             </div>
             <div className="flex items-center justify-between mb-2">
@@ -527,7 +561,6 @@ function App() {
               </div>
               <div className="flex items-center gap-2 flex-wrap justify-end">{socialLinks.map((link) => <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="text-purple-300 hover:text-white"><link.Icon className="w-3.5 h-3.5" /></a>)}</div>
             </div>
-            {showWalletMenu && walletConnected && <div className="absolute right-3 top-28 bg-slate-900 border border-purple-500/30 rounded-lg shadow-lg z-50"><div className="px-3 py-1.5 border-b border-purple-500/20 text-[10px] text-purple-300">{userXP} XP • {questionCount} questions</div><button onClick={disconnectWallet} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10"><LogOut className="w-3 h-3" />Disconnect</button></div>}
           </div>
 
           <div className="hidden sm:block">
@@ -544,13 +577,19 @@ function App() {
                 <a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-black/40 border border-pink-500/30 px-3 py-1.5 rounded-full hover:border-pink-500/50"><span className="text-[10px] text-purple-300">Powered by</span><img src="/sms.png" alt="$SMS" className="h-5 w-auto" /></a>
                 <div className="text-xs text-purple-300">👁️ {sessionCount} visits</div>
               </div>
-              <div className="relative">
-                {walletConnected ? (
-                  <div className="relative">
-                    <button onClick={() => setShowWalletMenu(!showWalletMenu)} className="flex items-center gap-2 bg-gradient-to-r from-purple-600/30 to-pink-600/30 px-3 py-2 rounded-xl border border-purple-500/30 hover:border-purple-500/50"><User className="w-4 h-4 text-purple-300" /><div className="text-left"><div className="text-xs text-white font-medium">{shortenAddress(walletAddress)}</div><div className="text-[10px] text-purple-300">{userXP} XP • {questionCount} questions</div></div><ChevronDown className="w-4 h-4 text-purple-300" /></button>
-                    {showWalletMenu && <div className="absolute right-0 top-full mt-2 bg-slate-900 border border-purple-500/30 rounded-xl shadow-lg z-50 min-w-[160px]"><button onClick={disconnectWallet} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10"><LogOut className="w-4 h-4" />Disconnect</button></div>}
-                  </div>
-                ) : <button onClick={() => { haptic(); setShowWalletPrompt(true); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:from-purple-500 hover:to-pink-500 flex items-center gap-2"><Wallet className="w-4 h-4" />Connect Wallet</button>}
+              <div className="flex items-center gap-3">
+                <button onClick={() => { haptic(); openLeaderboard(); }} className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-600/30 to-orange-600/30 hover:from-yellow-600/50 hover:to-orange-600/50 border border-yellow-500/40 px-3 py-2 rounded-xl text-yellow-300 hover:text-yellow-200 font-medium transition-all">
+                  <Trophy className="w-4 h-4" />
+                  <span className="text-sm">Leaderboard</span>
+                </button>
+                <div ref={walletMenuRef} className="relative">
+                  {walletConnected ? (
+                    <>
+                      <button onClick={() => setShowWalletMenu(!showWalletMenu)} className="flex items-center gap-2 bg-gradient-to-r from-purple-600/30 to-pink-600/30 px-3 py-2 rounded-xl border border-purple-500/30 hover:border-purple-500/50"><User className="w-4 h-4 text-purple-300" /><div className="text-left"><div className="text-xs text-white font-medium">{shortenAddress(walletAddress)}</div><div className="text-[10px] text-purple-300">{userXP} XP • {questionCount} questions</div></div><ChevronDown className="w-4 h-4 text-purple-300" /></button>
+                      {showWalletMenu && <div className="absolute right-0 top-full mt-2 bg-slate-900 border border-purple-500/30 rounded-xl shadow-lg z-50 min-w-[160px]"><button onClick={disconnectWallet} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 rounded-xl"><LogOut className="w-4 h-4" />Disconnect</button></div>}
+                    </>
+                  ) : <button onClick={() => { haptic(); setShowWalletPrompt(true); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:from-purple-500 hover:to-pink-500 flex items-center gap-2"><Wallet className="w-4 h-4" />Connect Wallet</button>}
+                </div>
               </div>
             </div>
           </div>
@@ -559,10 +598,12 @@ function App() {
             <div className="mb-3 sm:mb-6">
               <p className="text-[10px] sm:text-sm text-purple-300 mb-2 text-center">Quick start:</p>
               <div className="grid grid-cols-2 gap-1.5 sm:gap-3 max-w-2xl mx-auto">
-                <button onClick={() => { haptic(); handleSubmit('How do wallets work?'); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium text-[10px] sm:text-base text-left flex items-center gap-1.5 sm:gap-3"><Wallet className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /><span>How do wallets work?</span></button>
-                <button onClick={() => { haptic(); handleSubmit('What is a seed phrase?'); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium text-[10px] sm:text-base text-left flex items-center gap-1.5 sm:gap-3"><Sparkles className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /><span>What is a seed phrase?</span></button>
-                <button onClick={() => { haptic(); handleSubmit('Explain DeFi and staking'); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium text-[10px] sm:text-base text-left flex items-center gap-1.5 sm:gap-3"><Sparkles className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /><span>DeFi and staking</span></button>
-                <button onClick={() => { haptic(); handleSubmit('How do Solana memecoins work?'); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium text-[10px] sm:text-base text-left flex items-center gap-1.5 sm:gap-3"><Sparkles className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /><span>Solana memecoins</span></button>
+                {quickStartQuestions.map((q, i) => (
+                  <button key={i} onClick={() => { haptic(); handleSubmit(q.text); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium text-[10px] sm:text-base text-left flex items-center gap-1.5 sm:gap-3">
+                    {q.icon === 'wallet' ? <Wallet className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /> : <Sparkles className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" />}
+                    <span>{q.text}</span>
+                  </button>
+                ))}
               </div>
             </div>
           )}
@@ -606,11 +647,6 @@ function App() {
             <a href="/terms.html" className="hover:text-white">Terms</a>
             <span>•</span>
             <a href="/copyright.html" className="hover:text-white">Copyright</a>
-            <span>•</span>
-            <button onClick={() => { haptic(); openLeaderboard(); }} className="flex items-center gap-1 bg-gradient-to-r from-yellow-600/30 to-orange-600/30 hover:from-yellow-600/50 hover:to-orange-600/50 border border-yellow-500/40 px-2 py-0.5 rounded-full text-yellow-300 hover:text-yellow-200 font-medium transition-all">
-              <Trophy className="w-3 h-3" />
-              <span>Leaderboard</span>
-            </button>
           </div>
         </div>
       </div>
