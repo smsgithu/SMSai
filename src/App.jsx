@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Wallet, Sparkles, Send, Home, User, LogOut, Loader2, Twitter, Youtube, Video, Instagram, Linkedin, Calendar, ChevronDown, ExternalLink, MessageSquare, Plus, Trash2, Gift, Trophy, Medal, X } from 'lucide-react';
+import { Wallet, Sparkles, Send, Home, User, LogOut, Loader2, Twitter, Youtube, Video, Instagram, Linkedin, Calendar, ChevronDown, ExternalLink, MessageSquare, Plus, Trash2, Trophy, Medal, X } from 'lucide-react';
 import { getWallets } from '@wallet-standard/app';
 import {   
   createDefaultAuthorizationCache,   
@@ -21,7 +21,6 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [solPrice, setSolPrice] = useState(null);
   const [btcPrice, setBtcPrice] = useState(null);
-  const [smsPrice, setSmsPrice] = useState(null);
   const [sessionCount, setSessionCount] = useState(0);
   const [walletConnected, setWalletConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState('');
@@ -525,15 +524,9 @@ function App() {
 
       <div className="bg-black/60 backdrop-blur-md border-b border-purple-500/20 px-3 py-2">
         <div className="max-w-6xl mx-auto">
-          <div className="flex justify-center mb-1.5">
-            <div className="bg-gradient-to-r from-yellow-600/20 via-orange-600/20 to-yellow-600/20 border border-yellow-500/40 rounded-full px-3 py-1 animate-pulse">
-              <p className="text-[9px] sm:text-xs text-yellow-300 text-center flex items-center gap-1.5"><Gift className="w-3 h-3 sm:w-4 sm:h-4" /><span><span className="font-bold">USDC Bounties Coming</span> • Holders Only • Community Rewards 🎁</span></p>
-            </div>
-          </div>
           <div className="flex justify-center items-center gap-2 sm:gap-6 mb-1.5 overflow-x-auto">
             {solPrice && <div className="flex items-center gap-1 flex-shrink-0"><span className="text-purple-300 font-semibold text-[10px] sm:text-xs">$SOL</span><span className="text-white font-bold text-[10px] sm:text-xs">${solPrice.price.toFixed(2)}</span><span className={`text-[9px] sm:text-[10px] ${solPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>{solPrice.change >= 0 ? '↑' : '↓'}{Math.abs(solPrice.change).toFixed(1)}%</span></div>}
             {btcPrice && <div className="flex items-center gap-1 flex-shrink-0"><span className="text-orange-300 font-semibold text-[10px] sm:text-xs">$BTC</span><span className="text-white font-bold text-[10px] sm:text-xs">${(btcPrice.price / 1000).toFixed(1)}k</span><span className={`text-[9px] sm:text-[10px] ${btcPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>{btcPrice.change >= 0 ? '↑' : '↓'}{Math.abs(btcPrice.change).toFixed(1)}%</span></div>}
-            {smsPrice && <div className="flex items-center gap-1 flex-shrink-0"><a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS" target="_blank" rel="noopener noreferrer" className="text-pink-400 font-semibold text-[10px] sm:text-xs hover:text-pink-300">$SMS</a><span className="text-white font-bold text-[10px] sm:text-xs">${smsPrice.price < 0.01 ? smsPrice.price.toFixed(6) : smsPrice.price.toFixed(4)}</span><span className={`text-[9px] sm:text-[10px] ${smsPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>{smsPrice.change >= 0 ? '↑' : '↓'}{Math.abs(smsPrice.change).toFixed(1)}%</span><a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS" target="_blank" rel="noopener noreferrer" className="bg-gradient-to-r from-pink-600 to-purple-600 text-white text-[8px] px-1.5 py-0.5 rounded-full font-semibold">Buy</a></div>}
           </div>
           <div className="flex justify-center"><div className="bg-gradient-to-r from-green-600/20 to-emerald-600/20 border border-green-500/30 rounded-full px-2 py-0.5"><p className="text-[9px] sm:text-xs text-green-300 text-center">✨ <span className="font-semibold">100% Free</span> • 5 questions • Connect wallet for unlimited</p></div></div>
         </div>
@@ -550,13 +543,12 @@ function App() {
               {walletConnected ? (
                 <div ref={walletMenuRef} className="relative">
                   <button onClick={() => setShowWalletMenu(!showWalletMenu)} className="flex items-center gap-1 bg-purple-600/30 px-2 py-1 rounded-lg border border-purple-500/30"><User className="w-3 h-3 text-purple-300" /><span className="text-[9px] text-white">{shortenAddress(walletAddress)}</span><ChevronDown className="w-3 h-3 text-purple-300" /></button>
-                  {showWalletMenu && <div className="absolute right-0 top-full mt-1 bg-slate-900 border border-purple-500/30 rounded-lg shadow-lg z-50 min-w-[120px]"><div className="px-3 py-1.5 border-b border-purple-500/20 text-[10px] text-purple-300">{userXP} XP • {questionCount} questions</div><button onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onClick={disconnectWallet} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10"><LogOut className="w-3 h-3" />Disconnect</button></div>}
+                  {showWalletMenu && <div className="absolute right-0 top-full mt-1 bg-slate-900 border border-purple-500/30 rounded-lg shadow-lg z-50 min-w-[120px]"><div className="px-3 py-1.5 border-b border-purple-500/20 text-[10px] text-purple-300">{userXP} XP • {questionCount} questions</div><button onClick={(e) => { e.stopPropagation(); disconnectWallet(); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10"><LogOut className="w-3 h-3" />Disconnect</button></div>}
                 </div>
               ) : <button onClick={() => { haptic(); setShowWalletPrompt(true); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2.5 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1"><Wallet className="w-3 h-3" />Connect</button>}
             </div>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 bg-black/40 border border-pink-500/30 px-2 py-0.5 rounded-full"><span className="text-[8px] text-purple-300">Powered by</span><img src="/sms.png" alt="$SMS" className="h-3 w-auto" /></a>
                 <span className="text-[9px] text-purple-300">👁️ {sessionCount}</span>
               </div>
               <div className="flex items-center gap-2 flex-wrap justify-end">{socialLinks.map((link) => <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="text-purple-300 hover:text-white"><link.Icon className="w-3.5 h-3.5" /></a>)}</div>
@@ -574,7 +566,6 @@ function App() {
             </div>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
-                <a href="https://jup.ag/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-black/40 border border-pink-500/30 px-3 py-1.5 rounded-full hover:border-pink-500/50"><span className="text-[10px] text-purple-300">Powered by</span><img src="/sms.png" alt="$SMS" className="h-5 w-auto" /></a>
                 <div className="text-xs text-purple-300">👁️ {sessionCount} visits</div>
               </div>
               <div className="flex items-center gap-3">
@@ -586,7 +577,7 @@ function App() {
                   {walletConnected ? (
                     <>
                       <button onClick={() => setShowWalletMenu(!showWalletMenu)} className="flex items-center gap-2 bg-gradient-to-r from-purple-600/30 to-pink-600/30 px-3 py-2 rounded-xl border border-purple-500/30 hover:border-purple-500/50"><User className="w-4 h-4 text-purple-300" /><div className="text-left"><div className="text-xs text-white font-medium">{shortenAddress(walletAddress)}</div><div className="text-[10px] text-purple-300">{userXP} XP • {questionCount} questions</div></div><ChevronDown className="w-4 h-4 text-purple-300" /></button>
-                      {showWalletMenu && <div className="absolute right-0 top-full mt-2 bg-slate-900 border border-purple-500/30 rounded-xl shadow-lg z-50 min-w-[160px]"><button onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onClick={disconnectWallet} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 rounded-xl"><LogOut className="w-4 h-4" />Disconnect</button></div>}
+                      {showWalletMenu && <div className="absolute right-0 top-full mt-2 bg-slate-900 border border-purple-500/30 rounded-xl shadow-lg z-50 min-w-[160px]"><button onClick={(e) => { e.stopPropagation(); disconnectWallet(); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 rounded-xl"><LogOut className="w-4 h-4" />Disconnect</button></div>}
                     </>
                   ) : <button onClick={() => { haptic(); setShowWalletPrompt(true); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:from-purple-500 hover:to-pink-500 flex items-center gap-2"><Wallet className="w-4 h-4" />Connect Wallet</button>}
                 </div>
