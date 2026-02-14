@@ -75,18 +75,22 @@ function App() {
   // Close wallet menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (walletMenuRef.current && !walletMenuRef.current.contains(event.target)) {
-        setShowWalletMenu(false);
+      // Don't close if clicking inside the menu
+      if (walletMenuRef.current && walletMenuRef.current.contains(event.target)) {
+        return;
       }
+      setShowWalletMenu(false);
     };
     if (showWalletMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
+      // Use setTimeout to avoid immediate trigger
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('click', handleClickOutside);
+      }, 0);
+      return () => {
+        clearTimeout(timeoutId);
+        document.removeEventListener('click', handleClickOutside);
+      };
     }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
   }, [showWalletMenu]);
 
   // Initialize wallet standard detection
@@ -142,7 +146,7 @@ function App() {
 
   const walletOptions = useMemo(() => [
     { id: 'seedvault', name: 'Seed Vault', useStandard: true, isMwa: true },
-    { id: 'jupiter', name: 'Jupiter', useStandard: true, mobileLink: 'intent://browse?url=https%3A%2F%2Fsmsai.fun#Intent;scheme=jupiter;package=ag.jup.jupiter.android;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dag.jup.jupiter.android;end', downloadUrl: 'https://chromewebstore.google.com/detail/jupiter-wallet/iledlaeogohbilgbfhmbgkgmpplbfboh' },
+    { id: 'jupiter', name: 'Jupiter', useStandard: true, mobileLink: 'https://jup.ag/onboard', downloadUrl: 'https://chromewebstore.google.com/detail/jupiter-wallet/iledlaeogohbilgbfhmbgkgmpplbfboh' },
     { id: 'phantom', name: 'Phantom', window: 'solana', check: (w) => w?.isPhantom, mobileLink: `https://phantom.app/ul/browse/${encodeURIComponent('https://smsai.fun')}?ref=${encodeURIComponent('https://smsai.fun')}`, downloadUrl: 'https://phantom.app/' },
     { id: 'solflare', name: 'Solflare', window: 'solflare', check: (w) => !!w, mobileLink: `https://solflare.com/ul/v1/browse/${encodeURIComponent('https://smsai.fun')}?ref=${encodeURIComponent('https://smsai.fun')}`, downloadUrl: 'https://solflare.com/' },
     { id: 'backpack', name: 'Backpack', window: 'backpack', check: (w) => w?.isBackpack || (w && typeof w.connect === 'function'), mobileLink: `https://backpack.app/ul/v1/browse/${encodeURIComponent('https://smsai.fun')}?ref=${encodeURIComponent('https://smsai.fun')}`, downloadUrl: 'https://backpack.app/' },
@@ -545,7 +549,7 @@ function App() {
                   <button onClick={() => setShowWalletMenu(!showWalletMenu)} className="flex items-center gap-1 bg-purple-600/30 px-2 py-1 rounded-lg border border-purple-500/30"><User className="w-3 h-3 text-purple-300" /><span className="text-[9px] text-white">{shortenAddress(walletAddress)}</span><ChevronDown className="w-3 h-3 text-purple-300" /></button>
                   {showWalletMenu && (
                     <div className="absolute right-0 top-full mt-1 bg-slate-900 border border-purple-500/30 rounded-lg shadow-lg z-50 min-w-[130px]">
-                      <button onClick={() => setShowWalletMenu(false)} className="w-full flex items-center justify-center gap-1 px-3 py-1.5 text-[10px] text-purple-300 hover:text-white border-b border-purple-500/20"><X className="w-3 h-3" />Close</button>
+                      <button onClick={(e) => { e.stopPropagation(); setShowWalletMenu(false); }} className="w-full flex items-center justify-center gap-1 px-3 py-1.5 text-[10px] text-purple-300 hover:text-white border-b border-purple-500/20"><X className="w-3 h-3" />Close</button>
                       <div className="px-3 py-1.5 border-b border-purple-500/20 text-[10px] text-purple-300">{userXP} XP • {questionCount} questions</div>
                       <button onClick={(e) => { e.stopPropagation(); disconnectWallet(); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10"><LogOut className="w-3 h-3" />Disconnect</button>
                     </div>
@@ -585,7 +589,7 @@ function App() {
                       <button onClick={() => setShowWalletMenu(!showWalletMenu)} className="flex items-center gap-2 bg-gradient-to-r from-purple-600/30 to-pink-600/30 px-3 py-2 rounded-xl border border-purple-500/30 hover:border-purple-500/50"><User className="w-4 h-4 text-purple-300" /><div className="text-left"><div className="text-xs text-white font-medium">{shortenAddress(walletAddress)}</div><div className="text-[10px] text-purple-300">{userXP} XP • {questionCount} questions</div></div><ChevronDown className="w-4 h-4 text-purple-300" /></button>
                       {showWalletMenu && (
                         <div className="absolute right-0 top-full mt-2 bg-slate-900 border border-purple-500/30 rounded-xl shadow-lg z-50 min-w-[160px]">
-                          <button onClick={() => setShowWalletMenu(false)} className="w-full flex items-center justify-center gap-1 px-4 py-2 text-xs text-purple-300 hover:text-white border-b border-purple-500/20"><X className="w-3 h-3" />Close</button>
+                          <button onClick={(e) => { e.stopPropagation(); setShowWalletMenu(false); }} className="w-full flex items-center justify-center gap-1 px-4 py-2 text-xs text-purple-300 hover:text-white border-b border-purple-500/20"><X className="w-3 h-3" />Close</button>
                           <button onClick={(e) => { e.stopPropagation(); disconnectWallet(); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 rounded-b-xl"><LogOut className="w-4 h-4" />Disconnect</button>
                         </div>
                       )}
