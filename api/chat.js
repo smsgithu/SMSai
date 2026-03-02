@@ -1,4 +1,4 @@
-// /api/chat.js - Claude API with RAG knowledge injection
+// /api/chat.js - Claude API with RAG knowledge injection + Solana Docs .md integration
 
 import Anthropic from '@anthropic-ai/sdk';
 
@@ -6,7 +6,107 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// Solana knowledge base - injected into system prompt for better responses
+// ─── Solana Docs .md Fetcher ───
+// Leverages solana.com/docs/*.md endpoints (LLM-ready markdown)
+
+const SOLANA_DOCS_MAP = {
+  'account': 'https://solana.com/docs/core/accounts.md',
+  'accounts': 'https://solana.com/docs/core/accounts.md',
+  'transaction': 'https://solana.com/docs/core/transactions.md',
+  'transactions': 'https://solana.com/docs/core/transactions.md',
+  'program': 'https://solana.com/docs/core/programs.md',
+  'programs': 'https://solana.com/docs/core/programs.md',
+  'smart contract': 'https://solana.com/docs/core/programs.md',
+  'pda': 'https://solana.com/docs/core/pda.md',
+  'program derived address': 'https://solana.com/docs/core/pda.md',
+  'cpi': 'https://solana.com/docs/core/cpi.md',
+  'cross program invocation': 'https://solana.com/docs/core/cpi.md',
+  'token': 'https://solana.com/docs/core/tokens.md',
+  'tokens': 'https://solana.com/docs/core/tokens.md',
+  'spl token': 'https://solana.com/docs/core/tokens.md',
+  'spl tokens': 'https://solana.com/docs/core/tokens.md',
+  'validator': 'https://solana.com/docs/core.md',
+  'validators': 'https://solana.com/docs/core.md',
+  'consensus': 'https://solana.com/docs/core.md',
+  'proof of history': 'https://solana.com/docs/core.md',
+  'poh': 'https://solana.com/docs/core.md',
+  'tower bft': 'https://solana.com/docs/core.md',
+  'stake': 'https://solana.com/docs/economics/staking.md',
+  'staking': 'https://solana.com/docs/economics/staking.md',
+  'delegation': 'https://solana.com/docs/economics/staking.md',
+  'wallet': 'https://solana.com/docs/intro/wallets.md',
+  'wallets': 'https://solana.com/docs/intro/wallets.md',
+  'seed phrase': 'https://solana.com/docs/intro/wallets.md',
+  'keypair': 'https://solana.com/docs/intro/wallets.md',
+  'rpc': 'https://solana.com/docs/rpc.md',
+  'cluster': 'https://solana.com/docs/core/clusters.md',
+  'clusters': 'https://solana.com/docs/core/clusters.md',
+  'mainnet': 'https://solana.com/docs/core/clusters.md',
+  'devnet': 'https://solana.com/docs/core/clusters.md',
+  'solana': 'https://solana.com/docs/intro/overview.md',
+  'what is solana': 'https://solana.com/docs/intro/overview.md',
+  'how solana works': 'https://solana.com/docs/intro/overview.md',
+  'fee': 'https://solana.com/docs/core/fees.md',
+  'fees': 'https://solana.com/docs/core/fees.md',
+  'priority fee': 'https://solana.com/docs/core/fees.md',
+  'rent': 'https://solana.com/docs/core/fees.md',
+  'nft': 'https://solana.com/docs/core/tokens.md',
+  'nfts': 'https://solana.com/docs/core/tokens.md',
+};
+
+// In-memory cache (persists across warm invocations on Vercel)
+const docCache = new Map();
+const CACHE_TTL = 1000 * 60 * 60; // 1 hour
+
+function detectSolanaDocTopics(message) {
+  const lower = message.toLowerCase();
+  const urls = new Set();
+  for (const [keyword, url] of Object.entries(SOLANA_DOCS_MAP)) {
+    if (lower.includes(keyword)) {
+      urls.add(url);
+    }
+  }
+  return [...urls].slice(0, 2); // max 2 docs per query
+}
+
+async function fetchSolanaDoc(url) {
+  const cached = docCache.get(url);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.content;
+  }
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const response = await fetch(url, {
+      headers: { 'Accept': 'text/plain' },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!response.ok) return null;
+    const content = await response.text();
+    // Trim to ~2500 chars to keep context window manageable
+    const trimmed = content.length > 2500
+      ? content.slice(0, 2500) + '\n\n[... truncated]'
+      : content;
+    docCache.set(url, { content: trimmed, timestamp: Date.now() });
+    return trimmed;
+  } catch (error) {
+    console.warn(`Failed to fetch Solana doc ${url}:`, error.message);
+    return null;
+  }
+}
+
+async function getSolanaDocsContext(userMessage) {
+  const urls = detectSolanaDocTopics(userMessage);
+  if (urls.length === 0) return '';
+  const docs = await Promise.all(urls.map(fetchSolanaDoc));
+  const valid = docs.filter(Boolean);
+  if (valid.length === 0) return '';
+  return `\n\n---\nREFERENCE FROM OFFICIAL SOLANA DOCUMENTATION (solana.com/docs):\n\n${valid.join('\n\n---\n\n')}`;
+}
+
+// ─── Static Knowledge Base ───
+
 const SOLANA_KNOWLEDGE = `
 ## Solana Quick Facts
 - Founded by Anatoly Yakovenko, launched March 2020
@@ -170,6 +270,7 @@ ${SOLANA_KNOWLEDGE}
 - For wallet/security questions, always emphasize seed phrase safety
 - When discussing memecoins, always mention the risks
 - If users ask about Solana Seeker or Solana Mobile, you know about these!
+- When you use information from the official Solana docs context provided below, mention it naturally (e.g. "According to the official Solana docs..." or add a note like "📚 Source: Official Solana Documentation")
 
 ## When to Use Web Search
 - Questions about current prices, market data, or "right now" info
@@ -196,18 +297,12 @@ ${SOLANA_KNOWLEDGE}
 Remember: You represent Solana Made Simple - make crypto accessible and understandable for everyone!`;
 
 export default async function handler(req, res) {
-  // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
     const { messages, wallet_address } = req.body;
@@ -216,14 +311,31 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Messages array is required' });
     }
 
-    // Format messages for Claude
     const formattedMessages = messages.map(msg => ({
       role: msg.role === 'assistant' ? 'assistant' : 'user',
       content: msg.content
     }));
 
-    // Add context about the user if they have a wallet connected
+    // Get the latest user message to check for relevant Solana docs
+    const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
+    
+    // Fetch relevant Solana docs context in parallel (non-blocking, with timeout)
+    let docsContext = '';
+    if (lastUserMessage) {
+      try {
+        docsContext = await getSolanaDocsContext(lastUserMessage.content);
+      } catch (err) {
+        console.warn('Solana docs fetch failed, continuing without:', err.message);
+      }
+    }
+
+    // Build the system prompt with docs context injected
     let contextualSystemPrompt = SYSTEM_PROMPT;
+    
+    if (docsContext) {
+      contextualSystemPrompt += docsContext;
+    }
+    
     if (wallet_address) {
       contextualSystemPrompt += `\n\nNote: This user has connected their Solana wallet, so they likely have some experience with crypto. You can be slightly more technical if appropriate, but still keep things accessible.`;
     }
@@ -239,7 +351,6 @@ export default async function handler(req, res) {
       }]
     });
 
-    // Extract text content from response (may include web search results)
     let content = "";
     for (const block of response.content) {
       if (block.type === "text") {
@@ -256,14 +367,8 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Chat API error:', error);
     
-    if (error.status === 401) {
-      return res.status(500).json({ error: 'API authentication error' });
-    }
-    
-    if (error.status === 429) {
-      return res.status(429).json({ error: 'Rate limit exceeded. Please try again in a moment.' });
-    }
-
+    if (error.status === 401) return res.status(500).json({ error: 'API authentication error' });
+    if (error.status === 429) return res.status(429).json({ error: 'Rate limit exceeded. Please try again in a moment.' });
     return res.status(500).json({ error: 'Failed to process chat request' });
   }
 }
