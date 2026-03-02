@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Wallet, Sparkles, Send, Home, User, LogOut, Loader2, Twitter, Youtube, Video, Instagram, Linkedin, Calendar, ChevronDown, ExternalLink, MessageSquare, Plus, Trash2, Trophy, Medal, X } from 'lucide-react';
+import { Wallet, Sparkles, Send, Home, User, LogOut, Loader2, Twitter, Youtube, Video, Instagram, Linkedin, Calendar, ChevronDown, ExternalLink, MessageSquare, Plus, Trash2, Trophy, Medal, X, ArrowUpRight } from 'lucide-react';
 import { getWallets } from '@wallet-standard/app';
 import {   
   createDefaultAuthorizationCache,   
@@ -9,11 +9,17 @@ import {
   registerMwa,   
 } from '@solana-mobile/wallet-standard-mobile';
 
+/* ───────────────────────────────────────────
+   LIQUID GLASS EDITION — smsai.fun
+   Frosted glass panels, soft glows, smooth
+   motion, refined spacing. Same DNA, new skin.
+   ─────────────────────────────────────────── */
+
 function App() {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "👋 🌟 Welcome to smsai.fun\n\nYour AI guide to the Solana ecosystem. We break things down simply—from wallets and seed phrases to staking, DeFi, RWAs, memecoins, and how Solana actually works under the hood.\n\nAsk me anything about Solana.",
+      content: "👋 Welcome to **smsai.fun**\n\nYour AI guide to the Solana ecosystem. We break things down simply—from wallets and seed phrases to staking, DeFi, RWAs, memecoins, and how Solana actually works under the hood.\n\nAsk me anything about Solana.",
       timestamp: new Date()
     }
   ]);
@@ -59,57 +65,33 @@ function App() {
     { text: 'How does staking rewards work?', icon: 'sparkle' },
   ];
 
-  // Randomly select 4 questions on mount
   useEffect(() => {
     const shuffled = [...allQuickStartQuestions].sort(() => Math.random() - 0.5);
     setQuickStartQuestions(shuffled.slice(0, 4));
   }, []);
 
-  // Haptic feedback for touch interactions
   const haptic = (duration = 10) => {
-    if (navigator.vibrate) {
-      navigator.vibrate(duration);
-    }
+    if (navigator.vibrate) navigator.vibrate(duration);
   };
 
-  // Close wallet menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Don't close if clicking inside the menu
-      if (walletMenuRef.current && walletMenuRef.current.contains(event.target)) {
-        return;
-      }
+      if (walletMenuRef.current && walletMenuRef.current.contains(event.target)) return;
       setShowWalletMenu(false);
     };
     if (showWalletMenu) {
-      // Use setTimeout to avoid immediate trigger
-      const timeoutId = setTimeout(() => {
-        document.addEventListener('click', handleClickOutside);
-      }, 0);
-      return () => {
-        clearTimeout(timeoutId);
-        document.removeEventListener('click', handleClickOutside);
-      };
+      const timeoutId = setTimeout(() => document.addEventListener('click', handleClickOutside), 0);
+      return () => { clearTimeout(timeoutId); document.removeEventListener('click', handleClickOutside); };
     }
   }, [showWalletMenu]);
 
-  // Initialize wallet standard detection
   useEffect(() => {
     const { get, on } = getWallets();
-    
-    // Get initial wallets
-    const wallets = get();
-    setStandardWallets(wallets);
-    
-    // Listen for new wallets
-    const removeListener = on('register', () => {
-      setStandardWallets(get());
-    });
-    
+    setStandardWallets(get());
+    const removeListener = on('register', () => setStandardWallets(get()));
     return () => removeListener();
   }, []);
 
-  // Register MWA for Solana Mobile
   useEffect(() => {
     registerMwa({  
       appIdentity: { name: 'SMSai', uri: 'https://smsai.fun', icon: '/icon-512.png' },      
@@ -127,15 +109,10 @@ function App() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Find Jupiter wallet from wallet standard
   const findJupiterWallet = useCallback(() => {
-    return standardWallets.find(w => 
-      w.name?.toLowerCase().includes('jupiter') || 
-      w.name?.toLowerCase() === 'jup'
-    );
+    return standardWallets.find(w => w.name?.toLowerCase().includes('jupiter') || w.name?.toLowerCase() === 'jup');
   }, [standardWallets]);
 
-  // Find MWA/Seed Vault wallet from wallet standard
   const findMwaWallet = useCallback(() => {
     return standardWallets.find(w => 
       w.name?.toLowerCase().includes('mobile wallet adapter') || 
@@ -152,6 +129,7 @@ function App() {
     { id: 'backpack', name: 'Backpack', window: 'backpack', check: (w) => w?.isBackpack || (w && typeof w.connect === 'function'), mobileLink: `https://backpack.app/ul/v1/browse/${encodeURIComponent('https://smsai.fun')}?ref=${encodeURIComponent('https://smsai.fun')}`, downloadUrl: 'https://backpack.app/' },
   ], []);
 
+  // ── Data helpers (unchanged logic) ──
   const syncUserData = async (walletAddr, updates = {}) => {
     try {
       const response = await fetch('/api/user', {
@@ -223,6 +201,7 @@ function App() {
   const shortenAddress = (address) => `${address.slice(0, 4)}...${address.slice(-4)}`;
   const isInWalletBrowser = () => !!(window.solana?.isPhantom || window.solflare || window.backpack || findJupiterWallet());
 
+  // ── Init effects ──
   useEffect(() => {
     if (!hasTrackedSession.current) {
       hasTrackedSession.current = true;
@@ -251,8 +230,6 @@ function App() {
         const cgData = await (await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana,bitcoin&vs_currencies=usd&include_24hr_change=true')).json();
         setSolPrice({ price: cgData.solana.usd, change: cgData.solana.usd_24h_change });
         setBtcPrice({ price: cgData.bitcoin.usd, change: cgData.bitcoin.usd_24h_change });
-        const dexData = await (await fetch('https://api.dexscreener.com/latest/dex/tokens/A9FmiDpt5UMwuvJgR759RJMEHdXzwwymyisMNfxvBAGS')).json();
-        if (dexData.pairs?.length > 0) setSmsPrice({ price: parseFloat(dexData.pairs[0].priceUsd), change: parseFloat(dexData.pairs[0].priceChange?.h24 || 0) });
       } catch (error) { console.error('Failed to fetch prices:', error); }
     };
     fetchPrices();
@@ -263,34 +240,22 @@ function App() {
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
   useEffect(() => { if (walletConnected && messages.length > 1) { const timeout = setTimeout(() => saveCurrentChat(), 3000); return () => clearTimeout(timeout); } }, [messages, walletConnected]);
 
+  // ── Wallet connection (unchanged logic) ──
   const connectWallet = async (walletName) => {
     try {
       const walletConfig = walletOptions.find(w => w.id === walletName);
       if (!walletConfig) { alert('Unknown wallet type.'); return; }
-
       let publicKey;
 
-      // Handle Seed Vault / MWA via wallet standard
       if (walletConfig.isMwa) {
         const mwaWallet = findMwaWallet();
-        if (!mwaWallet) {
-          alert('Seed Vault / Mobile Wallet Adapter not available.\n\nThis wallet is only available on Solana Mobile devices with Seed Vault enabled.');
-          return;
-        }
-        
-        // Connect using wallet standard
+        if (!mwaWallet) { alert('Seed Vault / Mobile Wallet Adapter not available.\n\nThis wallet is only available on Solana Mobile devices with Seed Vault enabled.'); return; }
         const connectFeature = mwaWallet.features['standard:connect'];
         if (!connectFeature) throw new Error('Wallet does not support connect');
-        
         const result = await connectFeature.connect();
-        if (result.accounts && result.accounts.length > 0) {
-          publicKey = result.accounts[0].address;
-        } else {
-          throw new Error('No accounts returned');
-        }
-      }
-      // Handle Jupiter via wallet standard
-      else if (walletConfig.useStandard) {
+        if (result.accounts && result.accounts.length > 0) publicKey = result.accounts[0].address;
+        else throw new Error('No accounts returned');
+      } else if (walletConfig.useStandard) {
         const jupiterWallet = findJupiterWallet();
         if (!jupiterWallet) {
           if (isMobile && walletConfig.mobileLink) { window.location.href = walletConfig.mobileLink; return; }
@@ -298,19 +263,12 @@ function App() {
           alert(`${walletConfig.name} not detected.\n\n1. Install from the opened page\n2. Refresh this page\n3. Try again`);
           return;
         }
-        
-        // Connect using wallet standard
         const connectFeature = jupiterWallet.features['standard:connect'];
         if (!connectFeature) throw new Error('Wallet does not support connect');
-        
         const result = await connectFeature.connect();
-        if (result.accounts && result.accounts.length > 0) {
-          publicKey = result.accounts[0].address;
-        } else {
-          throw new Error('No accounts returned');
-        }
+        if (result.accounts && result.accounts.length > 0) publicKey = result.accounts[0].address;
+        else throw new Error('No accounts returned');
       } else {
-        // Handle other wallets via window object
         const walletObj = window[walletConfig.window];
         if (!walletObj || !walletConfig.check(walletObj)) {
           if (isMobile && walletConfig.mobileLink) { window.location.href = walletConfig.mobileLink; return; }
@@ -320,9 +278,7 @@ function App() {
         }
         const response = await walletObj.connect();
         publicKey = walletName === 'solflare' ? (walletObj.publicKey || response?.publicKey) : (response?.publicKey || walletObj.publicKey);
-        if (publicKey && typeof publicKey !== 'string') {
-          publicKey = publicKey.toString();
-        }
+        if (publicKey && typeof publicKey !== 'string') publicKey = publicKey.toString();
       }
 
       if (!publicKey) throw new Error('Could not find public key');
@@ -330,33 +286,13 @@ function App() {
       
       const userData = await loadUserData(address);
       let newXP = 0, newQuestionCount = 0, message = '';
-      if (userData) { 
-        newXP = userData.xp || 0; 
-        newQuestionCount = userData.questions_asked || 0; 
-        message = `Welcome back! You have ${newXP} XP`; 
-      } else { 
-        newXP = 20; 
-        newQuestionCount = 0; 
-        try { 
-          await syncUserData(address, { wallet_type: walletName, xp: 20, questions_asked: 0 }); 
-          message = 'Wallet connected! +20 XP welcome bonus'; 
-        } catch { 
-          alert('Connected but failed to save to database. You may need to reconnect.'); 
-          return; 
-        } 
-      }
+      if (userData) { newXP = userData.xp || 0; newQuestionCount = userData.questions_asked || 0; message = `Welcome back! You have ${newXP} XP`; }
+      else { newXP = 20; newQuestionCount = 0; try { await syncUserData(address, { wallet_type: walletName, xp: 20, questions_asked: 0 }); message = 'Wallet connected! +20 XP welcome bonus'; } catch { alert('Connected but failed to save to database. You may need to reconnect.'); return; } }
       
-      setWalletAddress(address); 
-      setWalletConnected(true); 
-      setWalletType(walletName); 
-      setUserXP(newXP); 
-      setQuestionCount(newQuestionCount);
-      setShowWalletPrompt(false); 
-      setShowWalletMenu(false);
-      localStorage.setItem('smsai_wallet', address); 
-      localStorage.setItem('smsai_wallet_type', walletName);
-      setConnectionMessage(message); 
-      setTimeout(() => setConnectionMessage(''), 5000);
+      setWalletAddress(address); setWalletConnected(true); setWalletType(walletName); setUserXP(newXP); setQuestionCount(newQuestionCount);
+      setShowWalletPrompt(false); setShowWalletMenu(false);
+      localStorage.setItem('smsai_wallet', address); localStorage.setItem('smsai_wallet_type', walletName);
+      setConnectionMessage(message); setTimeout(() => setConnectionMessage(''), 5000);
       loadChats(address);
     } catch (error) {
       console.error('Wallet connection error:', error);
@@ -390,271 +326,535 @@ function App() {
     finally { setLoading(false); }
   };
 
-  const resetChat = () => setMessages([{ role: 'assistant', content: "👋 🌟 Welcome to smsai.fun\n\nYour AI guide to the Solana ecosystem. We break things down simply—from wallets and seed phrases to staking, DeFi, RWAs, memecoins, and how Solana actually works under the hood.\n\nAsk me anything about Solana.", timestamp: new Date() }]);
+  const resetChat = () => setMessages([{ role: 'assistant', content: "👋 Welcome to **smsai.fun**\n\nYour AI guide to the Solana ecosystem. We break things down simply—from wallets and seed phrases to staking, DeFi, RWAs, memecoins, and how Solana actually works under the hood.\n\nAsk me anything about Solana.", timestamp: new Date() }]);
 
   const getRankIcon = (index) => {
     if (index === 0) return <Trophy className="w-4 h-4 text-yellow-400" />;
     if (index === 1) return <Medal className="w-4 h-4 text-gray-300" />;
     if (index === 2) return <Medal className="w-4 h-4 text-amber-600" />;
-    return <span className="text-xs text-purple-300 w-4 text-center">{index + 1}</span>;
+    return <span className="text-xs text-purple-300/80 w-4 text-center font-mono">{index + 1}</span>;
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
-      {connectionMessage && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-sm">
-          <div className="bg-green-600/30 backdrop-blur-md text-white px-4 py-2 rounded-full shadow-lg border border-green-400/50 flex items-center gap-2 justify-center">
-            <span>🎉</span><span className="font-semibold text-sm">{connectionMessage}</span>
-            <button onClick={() => setConnectionMessage('')} className="ml-1 text-white/80 hover:text-white"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
-          </div>
-        </div>
-      )}
+  /* ═══════════════════════════════════════════
+     GLASS COMPONENT HELPERS
+     Reusable glass panel styles
+     ═══════════════════════════════════════════ */
+  
+  const glass = "backdrop-blur-xl bg-white/[0.04] border border-white/[0.08]";
+  const glassHover = "hover:bg-white/[0.08] hover:border-white/[0.12] transition-all duration-300";
+  const glassBright = "backdrop-blur-xl bg-white/[0.07] border border-white/[0.12]";
+  const glassInput = "backdrop-blur-xl bg-white/[0.06] border border-white/[0.10] focus:border-purple-400/50 focus:bg-white/[0.08]";
+  const btnPrimary = "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 transition-all duration-300";
+  const btnGlass = `${glass} ${glassHover}`;
 
-      {showLeaderboard && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-          <div className="bg-gradient-to-br from-slate-900 to-purple-900 border border-purple-500/30 rounded-2xl p-4 sm:p-6 max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-white font-bold text-lg sm:text-xl flex items-center gap-2"><Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />XP Leaderboard</h2>
-              <button onClick={() => setShowLeaderboard(false)} className="text-purple-300 hover:text-white p-1"><X className="w-5 h-5 sm:w-6 sm:h-6" /></button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              {leaderboardLoading ? (
-                <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-purple-300" /></div>
-              ) : leaderboard.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-purple-300 text-sm">No users yet. Be the first to earn XP!</p>
-                  {!walletConnected && <button onClick={() => { setShowLeaderboard(false); setShowWalletPrompt(true); }} className="mt-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg px-4 py-2 font-semibold text-sm">Connect Wallet to Start</button>}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {leaderboard.map((user, index) => (
-                    <div key={user.wallet_address} className={`flex items-center justify-between p-3 rounded-xl ${walletAddress === user.wallet_address ? 'bg-purple-600/40 border border-purple-500/50' : 'bg-white/5 hover:bg-white/10'}`}>
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 flex justify-center">{getRankIcon(index)}</div>
-                        <div><span className="text-white text-sm font-mono">{shortenAddress(user.wallet_address)}</span>{walletAddress === user.wallet_address && <span className="ml-2 text-xs text-purple-300">(you)</span>}</div>
-                      </div>
-                      <div className="flex items-center gap-3 sm:gap-4">
-                        <span className="text-purple-300 text-xs">{user.questions_asked || 0} Q's</span>
-                        <span className="text-yellow-400 font-bold text-sm">{user.xp || 0} XP</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="mt-4 pt-4 border-t border-purple-500/30">
-              <button onClick={loadLeaderboard} disabled={leaderboardLoading} className="w-full bg-white/10 text-purple-200 rounded-lg px-4 py-2 font-medium hover:bg-white/20 text-sm flex items-center justify-center gap-2 disabled:opacity-50">
-                {leaderboardLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : '🔄'} Refresh
+  return (
+    <>
+      {/* ── Global Styles ── */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
+        
+        * { font-family: 'DM Sans', system-ui, sans-serif; }
+        
+        /* Smooth scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(168, 85, 247, 0.4); }
+        
+        /* Ambient glow behind main content */
+        .ambient-glow {
+          position: fixed;
+          width: 600px;
+          height: 600px;
+          border-radius: 50%;
+          filter: blur(120px);
+          opacity: 0.15;
+          pointer-events: none;
+          z-index: 0;
+        }
+        
+        /* Fade-in animation for messages */
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .msg-enter { animation: fadeSlideUp 0.3s ease-out forwards; }
+        
+        /* Subtle pulse for loading */
+        @keyframes gentlePulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 1; }
+        }
+        .loading-dot { animation: gentlePulse 1.4s ease-in-out infinite; }
+        .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+        .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+        
+        /* Glass shimmer on modal open */
+        @keyframes glassReveal {
+          from { opacity: 0; transform: scale(0.96) translateY(8px); backdrop-filter: blur(0px); }
+          to { opacity: 1; transform: scale(1) translateY(0); backdrop-filter: blur(20px); }
+        }
+        .glass-reveal { animation: glassReveal 0.25s ease-out forwards; }
+
+        /* Toast slide in */
+        @keyframes toastIn {
+          from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+          to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .toast-enter { animation: toastIn 0.35s ease-out forwards; }
+      `}</style>
+
+      <div className="min-h-screen bg-[#0a0a14] flex flex-col relative overflow-hidden">
+        {/* ── Ambient background glows ── */}
+        <div className="ambient-glow bg-purple-600" style={{ top: '-10%', left: '-5%' }} />
+        <div className="ambient-glow bg-pink-600" style={{ bottom: '-10%', right: '-5%' }} />
+        <div className="ambient-glow bg-indigo-600" style={{ top: '40%', left: '50%', width: '400px', height: '400px', opacity: 0.08 }} />
+
+        {/* ── Connection Toast ── */}
+        {connectionMessage && (
+          <div className="fixed top-16 left-1/2 z-50 px-4 w-full max-w-sm toast-enter" style={{ transform: 'translateX(-50%)' }}>
+            <div className={`${glassBright} text-white px-4 py-2.5 rounded-2xl shadow-lg shadow-green-500/10 flex items-center gap-2.5 justify-center`}>
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <span className="font-medium text-sm">{connectionMessage}</span>
+              <button onClick={() => setConnectionMessage('')} className="ml-auto text-white/50 hover:text-white transition-colors">
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {showChatHistory && walletConnected && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex">
-          <div className="bg-gradient-to-br from-slate-900 to-purple-900 w-72 max-w-[80vw] h-full border-r border-purple-500/30 p-4 overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-white font-bold">Chat History</h3>
-              <button onClick={() => setShowChatHistory(false)} className="text-purple-300 hover:text-white"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
-            </div>
-            <button onClick={startNewChat} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg px-3 py-2 font-semibold text-sm flex items-center justify-center gap-2 mb-4"><Plus className="w-4 h-4" /> New Chat</button>
-            {savedChats.length === 0 ? <p className="text-purple-300 text-sm text-center">No saved chats yet</p> : (
-              <div className="space-y-2">
-                {savedChats.map((chat) => (
-                  <div key={chat.id} onClick={() => loadChat(chat)} className={`p-3 rounded-lg cursor-pointer group ${currentChatId === chat.id ? 'bg-purple-600/30 border border-purple-500/50' : 'bg-white/5 hover:bg-white/10'}`}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0"><p className="text-white text-sm truncate">{chat.title}</p><p className="text-purple-300 text-xs">{new Date(chat.updated_at).toLocaleDateString()}</p></div>
-                      <button onClick={(e) => deleteChat(chat.id, e)} className="text-purple-300 hover:text-red-400 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
+        {/* ═══════════════════════════════════════
+            LEADERBOARD MODAL
+            ═══════════════════════════════════════ */}
+        {showLeaderboard && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4" onClick={() => setShowLeaderboard(false)}>
+            <div className={`${glassBright} rounded-3xl p-5 sm:p-6 max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col glass-reveal`} onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-white font-semibold text-lg flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 flex items-center justify-center">
+                    <Trophy className="w-4 h-4 text-yellow-400" />
+                  </div>
+                  Leaderboard
+                </h2>
+                <button onClick={() => setShowLeaderboard(false)} className="text-white/40 hover:text-white transition-colors p-1"><X className="w-5 h-5" /></button>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-1.5">
+                {leaderboardLoading ? (
+                  <div className="flex justify-center py-12">
+                    <div className="flex gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-purple-400 loading-dot" />
+                      <div className="w-2 h-2 rounded-full bg-purple-400 loading-dot" />
+                      <div className="w-2 h-2 rounded-full bg-purple-400 loading-dot" />
+                    </div>
+                  </div>
+                ) : leaderboard.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-white/40 text-sm mb-4">No users yet. Be the first to earn XP!</p>
+                    {!walletConnected && <button onClick={() => { setShowLeaderboard(false); setShowWalletPrompt(true); }} className={`${btnPrimary} text-white rounded-xl px-5 py-2.5 font-medium text-sm`}>Connect Wallet</button>}
+                  </div>
+                ) : leaderboard.map((user, index) => (
+                  <div key={user.wallet_address} className={`flex items-center justify-between p-3 rounded-xl transition-all duration-200 ${walletAddress === user.wallet_address ? 'bg-purple-500/15 border border-purple-500/20' : `bg-white/[0.02] ${glassHover}`}`}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 flex justify-center">{getRankIcon(index)}</div>
+                      <div>
+                        <span className="text-white/90 text-sm font-mono tracking-tight">{shortenAddress(user.wallet_address)}</span>
+                        {walletAddress === user.wallet_address && <span className="ml-2 text-[10px] text-purple-400 font-medium">you</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-white/30 text-xs tabular-nums">{user.questions_asked || 0} Q's</span>
+                      <span className="text-yellow-400/90 font-semibold text-sm tabular-nums">{user.xp || 0} XP</span>
                     </div>
                   </div>
                 ))}
               </div>
-            )}
+              <div className="mt-4 pt-4 border-t border-white/[0.06]">
+                <button onClick={loadLeaderboard} disabled={leaderboardLoading} className={`w-full ${btnGlass} text-white/60 rounded-xl px-4 py-2.5 font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-40`}>
+                  {leaderboardLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : '↻'} Refresh
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="flex-1" onClick={() => setShowChatHistory(false)} />
-        </div>
-      )}
+        )}
 
-      {showWalletPrompt && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 py-4">
-          <div className="bg-gradient-to-br from-slate-900 to-purple-900 border border-purple-500/30 rounded-2xl p-5 max-w-sm w-full max-h-[85vh] overflow-y-auto relative">
-            <button onClick={() => setShowWalletPrompt(false)} className="absolute top-3 right-3 text-purple-300 hover:text-white"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
-            <div className="text-center">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-3"><Wallet className="w-6 h-6 text-white" /></div>
-              <h2 className="text-lg font-bold text-white mb-2">Connect or Create Wallet</h2>
-              <p className="text-purple-200 text-sm mb-2">You've explored 5 questions! 🎉 To keep learning about Solana, Web3, and crypto, connect your wallet.</p>
-              <p className="text-xs text-purple-300/80 mb-4">It's 100% free, takes 30 seconds, and unlocks unlimited questions + XP rewards.</p>
-              {isMobile && !isInWalletBrowser() && <div className="bg-blue-600/20 border border-blue-500/30 rounded-lg p-2 mb-3"><p className="text-xs text-blue-200">📱 Tap a wallet to open this site in that wallet's browser</p></div>}
-              
-              {/* Seed Vault / MWA - shown prominently when available */}
-              {findMwaWallet() && (
-                <div className="bg-green-800/30 border border-green-500/30 rounded-xl p-3 mb-4">
-                  <p className="text-xs text-green-300 font-medium mb-2">📱 Solana Mobile Detected!</p>
-                  <button onClick={() => { haptic(); connectWallet('seedvault'); }} className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl px-4 py-3 font-semibold hover:from-green-500 hover:to-emerald-500 flex items-center justify-center gap-2 text-sm">
-                    <Wallet className="w-4 h-4" />Connect with Seed Vault
-                  </button>
+        {/* ═══════════════════════════════════════
+            CHAT HISTORY DRAWER
+            ═══════════════════════════════════════ */}
+        {showChatHistory && walletConnected && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex" onClick={() => setShowChatHistory(false)}>
+            <div className={`backdrop-blur-2xl bg-[#0d0d1a]/95 border-r border-white/[0.06] w-72 max-w-[80vw] h-full p-5 overflow-y-auto glass-reveal`} onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-white font-semibold text-base">History</h3>
+                <button onClick={() => setShowChatHistory(false)} className="text-white/40 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+              </div>
+              <button onClick={startNewChat} className={`w-full ${btnPrimary} text-white rounded-xl px-3 py-2.5 font-medium text-sm flex items-center justify-center gap-2 mb-5`}>
+                <Plus className="w-4 h-4" /> New Chat
+              </button>
+              {savedChats.length === 0 ? <p className="text-white/30 text-sm text-center mt-8">No saved chats yet</p> : (
+                <div className="space-y-1.5">
+                  {savedChats.map((chat) => (
+                    <div key={chat.id} onClick={() => loadChat(chat)} className={`p-3 rounded-xl cursor-pointer group transition-all duration-200 ${currentChatId === chat.id ? 'bg-purple-500/15 border border-purple-500/20' : 'hover:bg-white/[0.04]'}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white/80 text-sm truncate">{chat.title}</p>
+                          <p className="text-white/25 text-xs mt-0.5">{new Date(chat.updated_at).toLocaleDateString()}</p>
+                        </div>
+                        <button onClick={(e) => deleteChat(chat.id, e)} className="text-white/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
-              
-              <div className="bg-purple-800/30 border border-purple-500/20 rounded-xl p-3 mb-4">
-                <p className="text-xs text-white font-medium mb-2">{findMwaWallet() ? 'Or select another wallet:' : 'Already have a wallet? Select it below:'}</p>
-                <div className="space-y-2">
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════
+            WALLET PROMPT MODAL
+            ═══════════════════════════════════════ */}
+        {showWalletPrompt && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 py-4" onClick={() => setShowWalletPrompt(false)}>
+            <div className={`${glassBright} rounded-3xl p-6 max-w-sm w-full max-h-[85vh] overflow-y-auto relative glass-reveal`} onClick={e => e.stopPropagation()}>
+              <button onClick={() => setShowWalletPrompt(false)} className="absolute top-4 right-4 text-white/30 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+              <div className="text-center">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mx-auto mb-4 border border-white/[0.08]">
+                  <Wallet className="w-6 h-6 text-purple-300" />
+                </div>
+                <h2 className="text-xl font-semibold text-white mb-2">Connect Wallet</h2>
+                <p className="text-white/50 text-sm mb-1">You've explored 5 questions! 🎉</p>
+                <p className="text-white/30 text-xs mb-5">Free forever. Connect to unlock unlimited questions + XP.</p>
+                
+                {isMobile && !isInWalletBrowser() && (
+                  <div className={`${glass} rounded-xl p-3 mb-4`}>
+                    <p className="text-xs text-blue-300/80">📱 Tap a wallet to open this site in that wallet's browser</p>
+                  </div>
+                )}
+                
+                {findMwaWallet() && (
+                  <div className={`${glass} rounded-2xl p-4 mb-4 border-green-500/20`}>
+                    <p className="text-xs text-green-300/80 font-medium mb-3">📱 Solana Mobile Detected</p>
+                    <button onClick={() => { haptic(); connectWallet('seedvault'); }} className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white rounded-xl px-4 py-3 font-medium shadow-lg shadow-green-500/20 flex items-center justify-center gap-2 text-sm transition-all duration-300">
+                      <Wallet className="w-4 h-4" />Seed Vault
+                    </button>
+                  </div>
+                )}
+                
+                <div className="space-y-2 mb-5">
+                  <p className="text-xs text-white/30 font-medium mb-2">{findMwaWallet() ? 'Or select a wallet:' : 'Select a wallet:'}</p>
                   {walletOptions.filter(w => !w.isMwa).map((wallet) => (
-                    <button key={wallet.id} onClick={() => { haptic(); connectWallet(wallet.id); }} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl px-4 py-2.5 font-semibold hover:from-purple-500 hover:to-pink-500 flex items-center justify-center gap-2 text-sm">
-                      <Wallet className="w-4 h-4" />{wallet.name}{isMobile && !isInWalletBrowser() && !wallet.isMwa && <ExternalLink className="w-3 h-3 opacity-60" />}
+                    <button key={wallet.id} onClick={() => { haptic(); connectWallet(wallet.id); }} className={`w-full ${btnGlass} text-white/80 hover:text-white rounded-xl px-4 py-3 font-medium flex items-center justify-center gap-2.5 text-sm`}>
+                      <Wallet className="w-4 h-4 text-purple-400" />
+                      {wallet.name}
+                      {isMobile && !isInWalletBrowser() && !wallet.isMwa && <ExternalLink className="w-3 h-3 text-white/20" />}
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="relative my-5">
+                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/[0.06]" /></div>
+                  <div className="relative flex justify-center text-xs"><span className="bg-[#0d0d1a] px-3 text-white/25">New to crypto?</span></div>
+                </div>
+                
+                <div className={`${glass} rounded-2xl p-4 mb-4 text-left`}>
+                  <h3 className="text-white/80 font-medium text-sm mb-3 flex items-center gap-2"><Sparkles className="w-4 h-4 text-purple-400" />Create a wallet in 2 min</h3>
+                  <ol className="text-xs text-white/40 space-y-2">
+                    <li className="flex gap-2.5"><span className="text-purple-400 font-semibold">1.</span>Tap any wallet above to visit their site</li>
+                    <li className="flex gap-2.5"><span className="text-purple-400 font-semibold">2.</span>Install the extension or mobile app</li>
+                    <li className="flex gap-2.5"><span className="text-purple-400 font-semibold">3.</span>Create a new wallet (30 seconds)</li>
+                    <li className="flex gap-2.5"><span className="text-purple-400 font-semibold">4.</span>Save your seed phrase securely</li>
+                    <li className="flex gap-2.5"><span className="text-purple-400 font-semibold">5.</span>Return here and connect</li>
+                  </ol>
+                  <p className="text-[10px] text-white/20 mt-3">💡 Free, no personal info, no crypto needed.</p>
+                </div>
+                
+                <button onClick={() => setShowWalletPrompt(false)} className={`w-full ${btnGlass} text-white/40 rounded-xl px-4 py-2.5 font-medium text-sm`}>Maybe Later</button>
+                <p className="text-[10px] text-white/15 mt-3">No transactions • Just sign-in</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════
+            PRICE TICKER BAR
+            ═══════════════════════════════════════ */}
+        <div className="relative z-10 border-b border-white/[0.04] px-3 py-2">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex justify-center items-center gap-4 sm:gap-8 mb-1.5">
+              {solPrice && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-purple-300/60 font-medium text-[10px] sm:text-xs tracking-wide">SOL</span>
+                  <span className="text-white/80 font-semibold text-[10px] sm:text-xs tabular-nums">${solPrice.price.toFixed(2)}</span>
+                  <span className={`text-[9px] sm:text-[10px] font-medium tabular-nums ${solPrice.change >= 0 ? 'text-green-400/80' : 'text-red-400/80'}`}>
+                    {solPrice.change >= 0 ? '+' : ''}{solPrice.change.toFixed(1)}%
+                  </span>
+                </div>
+              )}
+              {btcPrice && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-orange-300/60 font-medium text-[10px] sm:text-xs tracking-wide">BTC</span>
+                  <span className="text-white/80 font-semibold text-[10px] sm:text-xs tabular-nums">${(btcPrice.price / 1000).toFixed(1)}k</span>
+                  <span className={`text-[9px] sm:text-[10px] font-medium tabular-nums ${btcPrice.change >= 0 ? 'text-green-400/80' : 'text-red-400/80'}`}>
+                    {btcPrice.change >= 0 ? '+' : ''}{btcPrice.change.toFixed(1)}%
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-center">
+              <div className={`${glass} rounded-full px-3 py-1`}>
+                <p className="text-[9px] sm:text-xs text-white/40 text-center">
+                  <span className="text-green-400/60 font-medium">Free</span> · 5 questions · Connect wallet for unlimited
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ═══════════════════════════════════════
+            MAIN CONTENT AREA
+            ═══════════════════════════════════════ */}
+        <div className="flex-1 flex flex-col items-center px-3 sm:px-4 pt-3 sm:pt-6 pb-4 overflow-y-auto relative z-10">
+          <div className="w-full max-w-4xl">
+
+            {/* ── Mobile Header ── */}
+            <div className="block sm:hidden mb-3">
+              <div className="flex items-center gap-2 mb-2">
+                {walletConnected && (
+                  <button onClick={() => { haptic(); setShowChatHistory(true); }} className={`${btnGlass} p-1.5 rounded-xl`}>
+                    <MessageSquare className="w-4 h-4 text-purple-300/60" />
+                  </button>
+                )}
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center flex-shrink-0 border border-white/[0.08]">
+                  <Sparkles className="w-4 h-4 text-purple-300" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-base font-semibold text-white/90 leading-tight tracking-tight">smsai.fun</h1>
+                  <p className="text-[10px] text-white/30">AI Guide to Solana</p>
+                </div>
+                <button onClick={() => { haptic(); openLeaderboard(); }} className={`${btnGlass} p-1.5 rounded-xl`}>
+                  <Trophy className="w-4 h-4 text-yellow-400/60" />
+                </button>
+                {walletConnected ? (
+                  <div ref={walletMenuRef} className="relative">
+                    <button onClick={() => setShowWalletMenu(!showWalletMenu)} className={`${btnGlass} flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl`}>
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                      <span className="text-[10px] text-white/70 font-mono">{shortenAddress(walletAddress)}</span>
+                      <ChevronDown className="w-3 h-3 text-white/30" />
+                    </button>
+                    {showWalletMenu && (
+                      <div className={`absolute right-0 top-full mt-1.5 ${glassBright} rounded-xl shadow-2xl shadow-black/40 z-50 min-w-[140px] glass-reveal`}>
+                        <div className="px-3 py-2 border-b border-white/[0.06] text-[10px] text-white/40">{userXP} XP · {questionCount} questions</div>
+                        <button onClick={(e) => { e.stopPropagation(); disconnectWallet(); }} className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-red-400/80 hover:text-red-400 hover:bg-red-500/5 transition-colors rounded-b-xl"><LogOut className="w-3 h-3" />Disconnect</button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <button onClick={() => { haptic(); setShowWalletPrompt(true); }} className={`${btnPrimary} text-white px-3 py-1.5 rounded-xl text-[10px] font-medium flex items-center gap-1.5`}>
+                    <Wallet className="w-3 h-3" />Connect
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[9px] text-white/20 tabular-nums">{sessionCount} visits</span>
+                <div className="flex items-center gap-2.5">
+                  {socialLinks.map((link) => (
+                    <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="text-white/20 hover:text-white/60 transition-colors">
+                      <link.Icon className="w-3.5 h-3.5" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Desktop Header ── */}
+            <div className="hidden sm:block">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  {walletConnected && (
+                    <button onClick={() => { haptic(); setShowChatHistory(true); }} className={`${btnGlass} flex items-center gap-2 p-2.5 rounded-xl`} title="Chat History">
+                      <MessageSquare className="w-4 h-4 text-purple-300/60" />
+                      <span className="text-xs text-white/40">History</span>
+                    </button>
+                  )}
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/15 to-pink-500/15 flex items-center justify-center border border-white/[0.08]">
+                    <Sparkles className="w-5 h-5 text-purple-300" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-semibold text-white/90 tracking-tight">smsai.fun</h1>
+                    <p className="text-sm text-white/30">Your AI Guide to Solana</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {socialLinks.map((link) => (
+                    <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-0.5 text-white/25 hover:text-white/60 transition-colors group">
+                      <link.Icon className="w-4 h-4" />
+                      <span className="text-[9px]">{link.label}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-xs text-white/20 tabular-nums">{sessionCount} visits</span>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => { haptic(); openLeaderboard(); }} className={`${btnGlass} flex items-center gap-2 px-3 py-2 rounded-xl`}>
+                    <Trophy className="w-4 h-4 text-yellow-400/60" />
+                    <span className="text-sm text-white/50">Leaderboard</span>
+                  </button>
+                  <div ref={walletMenuRef} className="relative">
+                    {walletConnected ? (
+                      <>
+                        <button onClick={() => setShowWalletMenu(!showWalletMenu)} className={`${btnGlass} flex items-center gap-2.5 px-3 py-2 rounded-xl`}>
+                          <div className="w-2 h-2 rounded-full bg-green-400" />
+                          <div className="text-left">
+                            <div className="text-xs text-white/70 font-mono">{shortenAddress(walletAddress)}</div>
+                            <div className="text-[10px] text-white/30">{userXP} XP · {questionCount} questions</div>
+                          </div>
+                          <ChevronDown className="w-4 h-4 text-white/20" />
+                        </button>
+                        {showWalletMenu && (
+                          <div className={`absolute right-0 top-full mt-2 ${glassBright} rounded-xl shadow-2xl shadow-black/40 z-50 min-w-[160px] glass-reveal`}>
+                            <button onClick={(e) => { e.stopPropagation(); disconnectWallet(); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400/80 hover:text-red-400 hover:bg-red-500/5 transition-colors rounded-xl">
+                              <LogOut className="w-4 h-4" />Disconnect
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <button onClick={() => { haptic(); setShowWalletPrompt(true); }} className={`${btnPrimary} text-white px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2`}>
+                        <Wallet className="w-4 h-4" />Connect Wallet
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Quick Start Questions ── */}
+            {messages.length === 1 && (
+              <div className="mb-4 sm:mb-6">
+                <p className="text-[10px] sm:text-xs text-white/25 mb-2.5 text-center tracking-wide uppercase">Quick Start</p>
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 max-w-2xl mx-auto">
+                  {quickStartQuestions.map((q, i) => (
+                    <button
+                      key={i}
+                      onClick={() => { haptic(); handleSubmit(q.text); }}
+                      className={`${btnGlass} group text-white/70 hover:text-white px-3 sm:px-5 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl text-left flex items-center gap-2 sm:gap-3`}
+                    >
+                      {q.icon === 'wallet' 
+                        ? <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 text-purple-400/60 group-hover:text-purple-300 transition-colors" /> 
+                        : <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 text-purple-400/60 group-hover:text-purple-300 transition-colors" />
+                      }
+                      <span className="text-[11px] sm:text-sm font-medium">{q.text}</span>
                     </button>
                   ))}
                 </div>
               </div>
-              <div className="relative my-4"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-purple-500/30"></div></div><div className="relative flex justify-center text-xs"><span className="bg-gradient-to-br from-slate-900 to-purple-900 px-2 text-purple-300">Need to create a wallet?</span></div></div>
-              <div className="bg-purple-900/30 border border-purple-500/30 rounded-xl p-3 mb-3">
-                <h3 className="text-white font-semibold text-sm mb-2 flex items-center justify-center gap-2"><Sparkles className="w-4 h-4" />Create Your First Wallet (2 min)</h3>
-                <ol className="text-xs text-purple-200 space-y-1.5 text-left">
-                  <li className="flex gap-2"><span className="font-bold text-purple-400">1.</span><span>Tap any wallet above to visit their website</span></li>
-                  <li className="flex gap-2"><span className="font-bold text-purple-400">2.</span><span>Install the browser extension or mobile app</span></li>
-                  <li className="flex gap-2"><span className="font-bold text-purple-400">3.</span><span>Create a new wallet (takes 30 seconds)</span></li>
-                  <li className="flex gap-2"><span className="font-bold text-purple-400">4.</span><span>Save your seed phrase securely (never share it!)</span></li>
-                  <li className="flex gap-2"><span className="font-bold text-purple-400">5.</span><span>Return here and connect</span></li>
-                </ol>
-                <p className="text-[10px] text-purple-300/80 italic mt-2">💡 Your wallet is free, requires no personal info, and you don't need any crypto to create it.</p>
-              </div>
-              <button onClick={() => setShowWalletPrompt(false)} className="w-full bg-white/10 text-purple-200 rounded-xl px-4 py-2 font-medium hover:bg-white/20 text-sm">Maybe Later</button>
-              <p className="text-[10px] text-purple-300/60 mt-3">100% free • No transactions • Just sign-in</p>
-            </div>
-          </div>
-        </div>
-      )}
+            )}
 
-      <div className="bg-black/60 backdrop-blur-md border-b border-purple-500/20 px-3 py-2">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex justify-center items-center gap-2 sm:gap-6 mb-1.5 overflow-x-auto">
-            {solPrice && <div className="flex items-center gap-1 flex-shrink-0"><span className="text-purple-300 font-semibold text-[10px] sm:text-xs">$SOL</span><span className="text-white font-bold text-[10px] sm:text-xs">${solPrice.price.toFixed(2)}</span><span className={`text-[9px] sm:text-[10px] ${solPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>{solPrice.change >= 0 ? '↑' : '↓'}{Math.abs(solPrice.change).toFixed(1)}%</span></div>}
-            {btcPrice && <div className="flex items-center gap-1 flex-shrink-0"><span className="text-orange-300 font-semibold text-[10px] sm:text-xs">$BTC</span><span className="text-white font-bold text-[10px] sm:text-xs">${(btcPrice.price / 1000).toFixed(1)}k</span><span className={`text-[9px] sm:text-[10px] ${btcPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>{btcPrice.change >= 0 ? '↑' : '↓'}{Math.abs(btcPrice.change).toFixed(1)}%</span></div>}
-          </div>
-          <div className="flex justify-center"><div className="bg-gradient-to-r from-green-600/20 to-emerald-600/20 border border-green-500/30 rounded-full px-2 py-0.5"><p className="text-[9px] sm:text-xs text-green-300 text-center">✨ <span className="font-semibold">100% Free</span> • 5 questions • Connect wallet for unlimited</p></div></div>
-        </div>
-      </div>
-
-      <div className="flex-1 flex flex-col items-center px-3 sm:px-4 pt-3 sm:pt-6 pb-4 overflow-y-auto">
-        <div className="w-full max-w-4xl">
-          <div className="block sm:hidden mb-3">
-            <div className="flex items-center gap-2 mb-2">
-              {walletConnected && <button onClick={() => { haptic(); setShowChatHistory(true); }} className="flex items-center gap-1 p-1.5 bg-purple-600/30 rounded-lg border border-purple-500/30"><MessageSquare className="w-4 h-4 text-purple-300" /><span className="text-[9px] text-purple-300">History</span></button>}
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0"><Sparkles className="w-4 h-4 text-white" /></div>
-              <div className="flex-1 min-w-0"><h1 className="text-base font-bold text-white leading-tight">smsai.fun</h1><p className="text-[10px] text-purple-300">Your AI Guide to Solana</p></div>
-              <button onClick={() => { haptic(); openLeaderboard(); }} className="p-1.5 bg-gradient-to-r from-yellow-600/30 to-orange-600/30 border border-yellow-500/40 rounded-lg"><Trophy className="w-4 h-4 text-yellow-300" /></button>
-              {walletConnected ? (
-                <div ref={walletMenuRef} className="relative">
-                  <button onClick={() => setShowWalletMenu(!showWalletMenu)} className="flex items-center gap-1 bg-purple-600/30 px-2 py-1 rounded-lg border border-purple-500/30"><User className="w-3 h-3 text-purple-300" /><span className="text-[9px] text-white">{shortenAddress(walletAddress)}</span><ChevronDown className="w-3 h-3 text-purple-300" /></button>
-                  {showWalletMenu && (
-                    <div className="absolute right-0 top-full mt-1 bg-slate-900 border border-purple-500/30 rounded-lg shadow-lg z-50 min-w-[130px]">
-                      <div className="px-3 py-1.5 border-b border-purple-500/20 text-[10px] text-purple-300">{userXP} XP • {questionCount} questions</div>
-                      <button onClick={(e) => { e.stopPropagation(); disconnectWallet(); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10"><LogOut className="w-3 h-3" />Disconnect</button>
+            {/* ═══════════════════════════════════════
+                MESSAGES
+                ═══════════════════════════════════════ */}
+            <div className="space-y-3 sm:space-y-4 mb-20 sm:mb-24 max-w-2xl mx-auto">
+              {messages.map((message, index) => (
+                <div key={index} className={`flex gap-2.5 msg-enter ${message.role === 'user' ? 'justify-end' : 'justify-start'}`} style={{ animationDelay: `${index * 0.05}s` }}>
+                  {message.role === 'assistant' && (
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-purple-500/15 to-pink-500/15 flex items-center justify-center flex-shrink-0 border border-white/[0.06] mt-0.5">
+                      <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-purple-300/80" />
+                    </div>
+                  )}
+                  <div className={`max-w-[85%] ${message.role === 'user' ? 'order-1' : ''}`}>
+                    <div className={`rounded-2xl px-3.5 sm:px-4 py-2.5 sm:py-3 ${
+                      message.role === 'user' 
+                        ? `${btnPrimary} text-white` 
+                        : `${glass} text-white/85`
+                    }`}>
+                      <ReactMarkdown className="prose prose-invert prose-sm max-w-none text-xs sm:text-[15px] leading-relaxed [&>p]:mb-2 [&>p:last-child]:mb-0 [&>ul]:mb-2 [&>ol]:mb-2 [&_strong]:text-white [&_a]:text-purple-300 [&_a]:underline [&_a]:underline-offset-2 [&_code]:text-pink-300/80 [&_code]:bg-white/[0.06] [&_code]:px-1 [&_code]:rounded">
+                        {message.content}
+                      </ReactMarkdown>
+                    </div>
+                    <div className="text-[9px] sm:text-[10px] text-white/20 mt-1 px-1 font-mono">{formatTime(message.timestamp)}</div>
+                  </div>
+                  {message.role === 'user' && (
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-blue-500/15 to-cyan-500/15 flex items-center justify-center flex-shrink-0 border border-white/[0.06] mt-0.5">
+                      <User className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-300/80" />
                     </div>
                   )}
                 </div>
-              ) : <button onClick={() => { haptic(); setShowWalletPrompt(true); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2.5 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1"><Wallet className="w-3 h-3" />Connect</button>}
-            </div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-[9px] text-purple-300">👁️ {sessionCount}</span>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap justify-end">{socialLinks.map((link) => <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="text-purple-300 hover:text-white"><link.Icon className="w-3.5 h-3.5" /></a>)}</div>
-            </div>
-          </div>
-
-          <div className="hidden sm:block">
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex items-center gap-3">
-                {walletConnected && <button onClick={() => { haptic(); setShowChatHistory(true); }} className="flex items-center gap-2 p-2 bg-purple-600/30 rounded-xl border border-purple-500/30 hover:bg-purple-600/50" title="Chat History"><MessageSquare className="w-5 h-5 text-purple-300" /><span className="text-xs text-purple-300">Chat History</span></button>}
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center"><Sparkles className="w-6 h-6 text-white" /></div>
-                <div><h1 className="text-2xl font-bold text-white">smsai.fun</h1><p className="text-sm text-purple-300">Your AI Guide to the Solana Ecosystem</p></div>
-              </div>
-              <div className="flex items-center gap-3">{socialLinks.map((link) => <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-0.5 text-purple-300 hover:text-white group"><link.Icon className="w-4 h-4" /><span className="text-[9px] group-hover:text-white">{link.label}</span></a>)}</div>
-            </div>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <div className="text-xs text-purple-300">👁️ {sessionCount} visits</div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button onClick={() => { haptic(); openLeaderboard(); }} className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-600/30 to-orange-600/30 hover:from-yellow-600/50 hover:to-orange-600/50 border border-yellow-500/40 px-3 py-2 rounded-xl text-yellow-300 hover:text-yellow-200 font-medium transition-all">
-                  <Trophy className="w-4 h-4" />
-                  <span className="text-sm">Leaderboard</span>
-                </button>
-                <div ref={walletMenuRef} className="relative">
-                  {walletConnected ? (
-                    <>
-                      <button onClick={() => setShowWalletMenu(!showWalletMenu)} className="flex items-center gap-2 bg-gradient-to-r from-purple-600/30 to-pink-600/30 px-3 py-2 rounded-xl border border-purple-500/30 hover:border-purple-500/50"><User className="w-4 h-4 text-purple-300" /><div className="text-left"><div className="text-xs text-white font-medium">{shortenAddress(walletAddress)}</div><div className="text-[10px] text-purple-300">{userXP} XP • {questionCount} questions</div></div><ChevronDown className="w-4 h-4 text-purple-300" /></button>
-                      {showWalletMenu && (
-                        <div className="absolute right-0 top-full mt-2 bg-slate-900 border border-purple-500/30 rounded-xl shadow-lg z-50 min-w-[160px]">
-                          <button onClick={(e) => { e.stopPropagation(); disconnectWallet(); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 rounded-xl"><LogOut className="w-4 h-4" />Disconnect</button>
-                        </div>
-                      )}
-                    </>
-                  ) : <button onClick={() => { haptic(); setShowWalletPrompt(true); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:from-purple-500 hover:to-pink-500 flex items-center gap-2"><Wallet className="w-4 h-4" />Connect Wallet</button>}
+              ))}
+              {loading && (
+                <div className="flex gap-2.5 msg-enter">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-purple-500/15 to-pink-500/15 flex items-center justify-center border border-white/[0.06]">
+                    <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-purple-300/80" />
+                  </div>
+                  <div className={`${glass} rounded-2xl px-4 py-3 flex gap-1.5`}>
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-400/60 loading-dot" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-400/60 loading-dot" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-400/60 loading-dot" />
+                  </div>
                 </div>
-              </div>
+              )}
+              <div ref={messagesEndRef} />
             </div>
           </div>
+        </div>
 
-          {messages.length === 1 && (
-            <div className="mb-3 sm:mb-6">
-              <p className="text-[10px] sm:text-sm text-purple-300 mb-2 text-center">Quick start:</p>
-              <div className="grid grid-cols-2 gap-1.5 sm:gap-3 max-w-2xl mx-auto">
-                {quickStartQuestions.map((q, i) => (
-                  <button key={i} onClick={() => { haptic(); handleSubmit(q.text); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium text-[10px] sm:text-base text-left flex items-center gap-1.5 sm:gap-3">
-                    {q.icon === 'wallet' ? <Wallet className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" /> : <Sparkles className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" />}
-                    <span>{q.text}</span>
+        {/* ═══════════════════════════════════════
+            INPUT BAR
+            ═══════════════════════════════════════ */}
+        <div className="fixed bottom-0 left-0 right-0 backdrop-blur-2xl bg-[#0a0a14]/80 border-t border-white/[0.04] p-2.5 sm:p-4 z-20">
+          <div className="max-w-2xl mx-auto">
+            {!walletConnected && questionCount > 0 && questionCount < 5 && (
+              <div className="mb-2 text-center">
+                <span className={`inline-block ${glass} text-white/40 text-[9px] sm:text-xs px-3 py-1 rounded-full font-medium`}>
+                  {5 - questionCount} free question{5 - questionCount !== 1 ? 's' : ''} left
+                </span>
+              </div>
+            )}
+            {!walletConnected && questionCount >= 5 && (
+              <div className="mb-2.5 text-center">
+                <div className={`inline-flex flex-col items-center gap-1.5 ${glass} text-white/60 text-[10px] sm:text-sm px-4 py-2.5 rounded-xl`}>
+                  <span>5 free questions used</span>
+                  <button onClick={() => setShowWalletPrompt(true)} className={`${btnPrimary} text-white px-4 py-1.5 rounded-lg font-medium flex items-center gap-1.5 text-[10px] sm:text-sm`}>
+                    <Wallet className="w-3 h-3" />Connect to Continue
                   </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-2 sm:space-y-4 mb-20 sm:mb-24 max-w-2xl mx-auto">
-            {messages.map((message, index) => (
-              <div key={index} className={`flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                {message.role === 'assistant' && <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0"><Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-white" /></div>}
-                <div className={`max-w-[85%] ${message.role === 'user' ? 'order-1' : ''}`}>
-                  <div className={`rounded-xl sm:rounded-2xl px-2.5 sm:px-4 py-2 sm:py-3 ${message.role === 'user' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white' : 'bg-white/10 text-white'}`}><ReactMarkdown className="prose prose-invert prose-sm max-w-none text-xs sm:text-base [&>p]:mb-2 [&>ul]:mb-2 [&>ol]:mb-2">{message.content}</ReactMarkdown></div>
-                  <div className="text-[9px] sm:text-xs text-purple-300/60 mt-0.5 px-1">{formatTime(message.timestamp)}</div>
                 </div>
-                {message.role === 'user' && <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0"><User className="w-3 h-3 sm:w-4 sm:h-4 text-white" /></div>}
               </div>
-            ))}
-            {loading && <div className="flex gap-2"><div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center"><Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-white" /></div><div className="bg-white/10 rounded-xl px-3 py-2"><Loader2 className="w-4 h-4 animate-spin text-purple-300" /></div></div>}
-            <div ref={messagesEndRef} />
-          </div>
-        </div>
-      </div>
-
-      <div className="fixed bottom-0 left-0 right-0 bg-black/60 backdrop-blur-md border-t border-purple-500/20 p-2 sm:p-4">
-        <div className="max-w-2xl mx-auto">
-          {!walletConnected && questionCount > 0 && questionCount < 5 && <div className="mb-1.5 text-center"><span className="inline-block bg-purple-600/30 text-purple-200 text-[9px] sm:text-xs px-2 py-0.5 rounded-full">{5 - questionCount} free questions left</span></div>}
-          {!walletConnected && questionCount >= 5 && (
-            <div className="mb-2 text-center">
-              <div className="inline-flex flex-col items-center gap-1 bg-purple-600/30 border border-purple-500/30 text-purple-100 text-[10px] sm:text-sm px-3 py-2 rounded-lg">
-                <span>🎉 5 free questions used!</span>
-                <button onClick={() => setShowWalletPrompt(true)} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 rounded-lg font-semibold flex items-center gap-1 text-[10px] sm:text-sm"><Wallet className="w-3 h-3" />Connect to Continue</button>
-              </div>
+            )}
+            <div className="flex gap-2 sm:gap-2.5">
+              {messages.length > 1 && (
+                <button type="button" onClick={() => { haptic(); startNewChat(); }} className={`${btnGlass} text-white/50 p-2.5 sm:p-3 rounded-xl`} title="New Chat">
+                  <Home className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              )}
+              <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="flex-1 flex gap-2 sm:gap-2.5">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={!walletConnected && questionCount >= 5 ? "Connect wallet to continue..." : "Ask about Solana..."}
+                  disabled={loading || (!walletConnected && questionCount >= 5)}
+                  className={`flex-1 ${glassInput} text-white/90 placeholder-white/25 focus:outline-none disabled:opacity-40 px-4 py-2.5 sm:py-3 rounded-xl text-sm transition-all duration-300`}
+                />
+                <button
+                  type="submit"
+                  disabled={loading || !input.trim() || (!walletConnected && questionCount >= 5)}
+                  onClick={() => haptic()}
+                  className={`${btnPrimary} text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium disabled:opacity-30 disabled:shadow-none`}
+                >
+                  {loading ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <Send className="w-4 h-4 sm:w-5 sm:h-5" />}
+                </button>
+              </form>
             </div>
-          )}
-          <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="flex gap-1.5 sm:gap-2">
-            {messages.length > 1 && <button type="button" onClick={() => { haptic(); startNewChat(); }} className="bg-purple-600/50 hover:bg-purple-600 text-white p-2 sm:p-3 rounded-lg sm:rounded-xl" title="New Chat"><Home className="w-4 h-4 sm:w-5 sm:h-5" /></button>}
-            <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder={!walletConnected && questionCount >= 5 ? "Connect wallet..." : "Ask about Solana..."} disabled={loading || (!walletConnected && questionCount >= 5)} className="flex-1 bg-white/10 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 px-3 py-2 sm:py-3 rounded-lg sm:rounded-xl text-sm" />
-            <button type="submit" disabled={loading || !input.trim() || (!walletConnected && questionCount >= 5)} onClick={() => haptic()} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold disabled:opacity-50">{loading ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <Send className="w-4 h-4 sm:w-5 sm:h-5" />}</button>
-          </form>
-          <div className="flex justify-center items-center gap-2 sm:gap-3 mt-2 text-[9px] sm:text-xs text-purple-400">
-            <a href="/privacy.html" className="hover:text-white">Privacy</a>
-            <span>•</span>
-            <a href="/terms.html" className="hover:text-white">Terms</a>
-            <span>•</span>
-            <a href="/copyright.html" className="hover:text-white">Copyright</a>
+            <div className="flex justify-center items-center gap-3 sm:gap-4 mt-2.5 text-[9px] sm:text-[11px] text-white/15">
+              <a href="/privacy.html" className="hover:text-white/40 transition-colors">Privacy</a>
+              <span>·</span>
+              <a href="/terms.html" className="hover:text-white/40 transition-colors">Terms</a>
+              <span>·</span>
+              <a href="/copyright.html" className="hover:text-white/40 transition-colors">Copyright</a>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
