@@ -1,19 +1,32 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Wallet, Sparkles, Send, Home, User, LogOut, Loader2, Twitter, Youtube, Video, Instagram, Linkedin, Calendar, ChevronDown, ExternalLink, MessageSquare, Plus, Trash2, Trophy, Medal, X, ArrowUpRight } from 'lucide-react';
+import { Wallet, Sparkles, Send, Home, User, LogOut, Loader2, Youtube, Instagram, Linkedin, Calendar, ChevronDown, ExternalLink, MessageSquare, Plus, Trash2, Trophy, Medal, X, ArrowUpRight } from 'lucide-react';
 import { getWallets } from '@wallet-standard/app';
-import {   
-  createDefaultAuthorizationCache,   
-  createDefaultChainSelector,   
-  createDefaultWalletNotFoundHandler,  
-  registerMwa,   
+import {
+  createDefaultAuthorizationCache,
+  createDefaultChainSelector,
+  createDefaultWalletNotFoundHandler,
+  registerMwa,
 } from '@solana-mobile/wallet-standard-mobile';
 
 /* ───────────────────────────────────────────
-   LIQUID GLASS EDITION — smsai.fun
-   Frosted glass panels, soft glows, smooth
-   motion, refined spacing. Same DNA, new skin.
+   SOLANA THEME EDITION — smsai.fun
+   Surge green #00FFA3 · Purple #9945FF
+   Ocean blue #03E1FF · Deep dark #0a0a0f
    ─────────────────────────────────────────── */
+
+// ── Custom X/Twitter icon (not in lucide) ──
+const XIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+  </svg>
+);
+
+const TikTokIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/>
+  </svg>
+);
 
 function App() {
   const [messages, setMessages] = useState([
@@ -49,7 +62,6 @@ function App() {
   const hasTrackedSession = useRef(false);
   const walletMenuRef = useRef(null);
 
-  // All possible quick start questions
   const allQuickStartQuestions = [
     { text: 'How do wallets work?', icon: 'wallet' },
     { text: 'What is a seed phrase?', icon: 'sparkle' },
@@ -70,9 +82,7 @@ function App() {
     setQuickStartQuestions(shuffled.slice(0, 4));
   }, []);
 
-  const haptic = (duration = 10) => {
-    if (navigator.vibrate) navigator.vibrate(duration);
-  };
+  const haptic = (duration = 10) => { if (navigator.vibrate) navigator.vibrate(duration); };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -93,12 +103,12 @@ function App() {
   }, []);
 
   useEffect(() => {
-    registerMwa({  
-      appIdentity: { name: 'SMSai', uri: 'https://smsai.fun', icon: '/icon-512.png' },      
-      authorizationCache: createDefaultAuthorizationCache(),  
+    registerMwa({
+      appIdentity: { name: 'SMSai', uri: 'https://smsai.fun', icon: '/icon-512.png' },
+      authorizationCache: createDefaultAuthorizationCache(),
       chains: ['solana:mainnet'],
-      chainSelector: createDefaultChainSelector(),  
-      onWalletNotFound: createDefaultWalletNotFoundHandler(),  
+      chainSelector: createDefaultChainSelector(),
+      onWalletNotFound: createDefaultWalletNotFoundHandler(),
     });
   }, []);
 
@@ -114,8 +124,8 @@ function App() {
   }, [standardWallets]);
 
   const findMwaWallet = useCallback(() => {
-    return standardWallets.find(w => 
-      w.name?.toLowerCase().includes('mobile wallet adapter') || 
+    return standardWallets.find(w =>
+      w.name?.toLowerCase().includes('mobile wallet adapter') ||
       w.name?.toLowerCase().includes('seed vault') ||
       w.name?.toLowerCase().includes('mwa')
     );
@@ -129,7 +139,7 @@ function App() {
     { id: 'backpack', name: 'Backpack', window: 'backpack', check: (w) => w?.isBackpack || (w && typeof w.connect === 'function'), mobileLink: `https://backpack.app/ul/v1/browse/${encodeURIComponent('https://smsai.fun')}?ref=${encodeURIComponent('https://smsai.fun')}`, downloadUrl: 'https://backpack.app/' },
   ], []);
 
-  // ── Data helpers (unchanged logic) ──
+  // ── Data helpers (unchanged) ──
   const syncUserData = async (walletAddr, updates = {}) => {
     try {
       const response = await fetch('/api/user', {
@@ -188,10 +198,10 @@ function App() {
   const startNewChat = () => { if (walletConnected && messages.length > 1) saveCurrentChat(); setCurrentChatId(null); resetChat(); setShowChatHistory(false); };
 
   const socialLinks = [
-    { name: 'X', url: 'https://x.com/smsonx', Icon: Twitter, label: '@smsonx' },
-    { name: 'X', url: 'https://x.com/solmadesimple', Icon: Twitter, label: '@solmadesimple' },
+    { name: 'X', url: 'https://x.com/smsonx', Icon: XIcon, label: '@smsonx' },
+    { name: 'X', url: 'https://x.com/solmadesimple', Icon: XIcon, label: '@solmadesimple' },
     { name: 'YouTube', url: 'https://www.youtube.com/@SMSONYOUTUBE', Icon: Youtube, label: 'YouTube' },
-    { name: 'TikTok', url: 'https://www.tiktok.com/@solanamadesimple', Icon: Video, label: 'TikTok' },
+    { name: 'TikTok', url: 'https://www.tiktok.com/@solanamadesimple', Icon: TikTokIcon, label: 'TikTok' },
     { name: 'Instagram', url: 'https://www.instagram.com/smscrypto', Icon: Instagram, label: 'Insta' },
     { name: 'LinkedIn', url: 'https://www.linkedin.com/in/sean-suvie-77a35018b/', Icon: Linkedin, label: 'LinkedIn' },
     { name: 'Book Call', url: 'https://calendly.com/seanmsuvie/30min', Icon: Calendar, label: "Let's chat!" }
@@ -283,12 +293,12 @@ function App() {
 
       if (!publicKey) throw new Error('Could not find public key');
       const address = typeof publicKey === 'string' ? publicKey : publicKey.toString();
-      
+
       const userData = await loadUserData(address);
       let newXP = 0, newQuestionCount = 0, message = '';
       if (userData) { newXP = userData.xp || 0; newQuestionCount = userData.questions_asked || 0; message = `Welcome back! You have ${newXP} XP`; }
       else { newXP = 20; newQuestionCount = 0; try { await syncUserData(address, { wallet_type: walletName, xp: 20, questions_asked: 0 }); message = 'Wallet connected! +20 XP welcome bonus'; } catch { alert('Connected but failed to save to database. You may need to reconnect.'); return; } }
-      
+
       setWalletAddress(address); setWalletConnected(true); setWalletType(walletName); setUserXP(newXP); setQuestionCount(newQuestionCount);
       setShowWalletPrompt(false); setShowWalletMenu(false);
       localStorage.setItem('smsai_wallet', address); localStorage.setItem('smsai_wallet_type', walletName);
@@ -332,91 +342,100 @@ function App() {
     if (index === 0) return <Trophy className="w-4 h-4 text-yellow-400" />;
     if (index === 1) return <Medal className="w-4 h-4 text-gray-300" />;
     if (index === 2) return <Medal className="w-4 h-4 text-amber-600" />;
-    return <span className="text-xs text-purple-300/80 w-4 text-center font-mono">{index + 1}</span>;
+    return <span className="text-xs text-[#9945FF]/80 w-4 text-center font-mono">{index + 1}</span>;
   };
 
   /* ═══════════════════════════════════════════
-     GLASS COMPONENT HELPERS
-     Reusable glass panel styles
+     SOLANA THEME TOKENS
      ═══════════════════════════════════════════ */
-  
-  const glass = "backdrop-blur-xl bg-white/[0.04] border border-white/[0.08]";
-  const glassHover = "hover:bg-white/[0.08] hover:border-white/[0.12] transition-all duration-300";
-  const glassBright = "backdrop-blur-xl bg-white/[0.07] border border-white/[0.12]";
-  const glassInput = "backdrop-blur-xl bg-white/[0.06] border border-white/[0.10] focus:border-purple-400/50 focus:bg-white/[0.08]";
-  const btnPrimary = "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 transition-all duration-300";
-  const btnGlass = `${glass} ${glassHover}`;
+  const solGreen = '#00FFA3';
+  const solPurple = '#9945FF';
+  const solBlue = '#03E1FF';
+
+  // Panel styles
+  const panel = "bg-white/[0.03] border border-white/[0.07]";
+  const panelHover = "hover:bg-white/[0.06] hover:border-white/[0.12] transition-all duration-200";
+  const panelBright = "bg-white/[0.05] border border-white/[0.10]";
+
+  // Input style
+  const inputStyle = "bg-white/[0.04] border border-white/[0.08] focus:border-[#9945FF]/50 focus:bg-white/[0.06]";
+
+  // Primary gradient button (purple → green)
+  const btnPrimary = "bg-gradient-to-r from-[#9945FF] to-[#00FFA3] hover:opacity-90 transition-opacity";
+
+  // Ghost panel button
+  const btnPanel = `${panel} ${panelHover}`;
 
   return (
     <>
       {/* ── Global Styles ── */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
-        
-        * { font-family: 'DM Sans', system-ui, sans-serif; }
-        
-        /* Smooth scrollbar */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * { font-family: 'Inter', system-ui, sans-serif; }
+
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.2); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(168, 85, 247, 0.4); }
-        
-        /* Ambient glow behind main content */
-        .ambient-glow {
-          position: fixed;
-          width: 600px;
-          height: 600px;
-          border-radius: 50%;
-          filter: blur(120px);
-          opacity: 0.15;
-          pointer-events: none;
-          z-index: 0;
-        }
-        
-        /* Fade-in animation for messages */
+        ::-webkit-scrollbar-thumb { background: rgba(153,69,255,0.25); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(153,69,255,0.5); }
+
         @keyframes fadeSlideUp {
           from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-        .msg-enter { animation: fadeSlideUp 0.3s ease-out forwards; }
-        
-        /* Subtle pulse for loading */
+        .msg-enter { animation: fadeSlideUp 0.25s ease-out forwards; }
+
         @keyframes gentlePulse {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 1; }
+          0%, 100% { opacity: 0.3; }
+          50%       { opacity: 1; }
         }
         .loading-dot { animation: gentlePulse 1.4s ease-in-out infinite; }
         .loading-dot:nth-child(2) { animation-delay: 0.2s; }
         .loading-dot:nth-child(3) { animation-delay: 0.4s; }
-        
-        /* Glass shimmer on modal open */
-        @keyframes glassReveal {
-          from { opacity: 0; transform: scale(0.96) translateY(8px); backdrop-filter: blur(0px); }
-          to { opacity: 1; transform: scale(1) translateY(0); backdrop-filter: blur(20px); }
-        }
-        .glass-reveal { animation: glassReveal 0.25s ease-out forwards; }
 
-        /* Toast slide in */
-        @keyframes toastIn {
-          from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
-          to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        @keyframes modalReveal {
+          from { opacity: 0; transform: scale(0.97) translateY(6px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
         }
-        .toast-enter { animation: toastIn 0.35s ease-out forwards; }
+        .modal-reveal { animation: modalReveal 0.2s ease-out forwards; }
+
+        @keyframes toastIn {
+          from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .toast-enter { animation: toastIn 0.3s ease-out forwards; }
+
+        /* Solana gradient text */
+        .sol-text {
+          background: linear-gradient(90deg, #9945FF, #03E1FF, #00FFA3);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        /* Solana gradient border shimmer */
+        .sol-divider {
+          height: 1px;
+          background: linear-gradient(90deg, transparent, #9945FF, #03E1FF, #00FFA3, transparent);
+          opacity: 0.25;
+        }
       `}</style>
 
-      <div className="min-h-screen bg-[#0a0a14] flex flex-col relative overflow-hidden">
-        {/* ── Ambient background glows ── */}
-        <div className="ambient-glow bg-purple-600" style={{ top: '-10%', left: '-5%' }} />
-        <div className="ambient-glow bg-pink-600" style={{ bottom: '-10%', right: '-5%' }} />
-        <div className="ambient-glow bg-indigo-600" style={{ top: '40%', left: '50%', width: '400px', height: '400px', opacity: 0.08 }} />
+      <div className="min-h-screen flex flex-col relative" style={{ background: '#0a0a0f' }}>
+
+        {/* ── Subtle ambient glows ── */}
+        <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
+          <div style={{ position: 'absolute', top: '-15%', left: '-10%', width: 500, height: 500, borderRadius: '50%', background: '#9945FF', filter: 'blur(130px)', opacity: 0.07 }} />
+          <div style={{ position: 'absolute', bottom: '-15%', right: '-10%', width: 500, height: 500, borderRadius: '50%', background: '#00FFA3', filter: 'blur(130px)', opacity: 0.06 }} />
+        </div>
 
         {/* ── Connection Toast ── */}
         {connectionMessage && (
           <div className="fixed top-16 left-1/2 z-50 px-4 w-full max-w-sm toast-enter" style={{ transform: 'translateX(-50%)' }}>
-            <div className={`${glassBright} text-white px-4 py-2.5 rounded-2xl shadow-lg shadow-green-500/10 flex items-center gap-2.5 justify-center`}>
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="font-medium text-sm">{connectionMessage}</span>
-              <button onClick={() => setConnectionMessage('')} className="ml-auto text-white/50 hover:text-white transition-colors">
+            <div className={`${panelBright} rounded-2xl px-4 py-2.5 flex items-center gap-2.5 justify-center`}>
+              <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: solGreen }} />
+              <span className="font-medium text-sm text-white/80">{connectionMessage}</span>
+              <button onClick={() => setConnectionMessage('')} className="ml-auto text-white/30 hover:text-white/60 transition-colors">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -427,49 +446,54 @@ function App() {
             LEADERBOARD MODAL
             ═══════════════════════════════════════ */}
         {showLeaderboard && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4" onClick={() => setShowLeaderboard(false)}>
-            <div className={`${glassBright} rounded-3xl p-5 sm:p-6 max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col glass-reveal`} onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center px-4" onClick={() => setShowLeaderboard(false)}>
+            <div className={`${panelBright} rounded-3xl p-5 sm:p-6 max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col modal-reveal`} onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-white font-semibold text-lg flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(153,69,255,0.15)', border: '1px solid rgba(153,69,255,0.25)' }}>
                     <Trophy className="w-4 h-4 text-yellow-400" />
                   </div>
                   Leaderboard
                 </h2>
-                <button onClick={() => setShowLeaderboard(false)} className="text-white/40 hover:text-white transition-colors p-1"><X className="w-5 h-5" /></button>
+                <button onClick={() => setShowLeaderboard(false)} className="text-white/30 hover:text-white/70 transition-colors p-1"><X className="w-5 h-5" /></button>
               </div>
               <div className="flex-1 overflow-y-auto space-y-1.5">
                 {leaderboardLoading ? (
                   <div className="flex justify-center py-12">
                     <div className="flex gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-purple-400 loading-dot" />
-                      <div className="w-2 h-2 rounded-full bg-purple-400 loading-dot" />
-                      <div className="w-2 h-2 rounded-full bg-purple-400 loading-dot" />
+                      <div className="w-2 h-2 rounded-full loading-dot" style={{ background: solPurple }} />
+                      <div className="w-2 h-2 rounded-full loading-dot" style={{ background: solBlue }} />
+                      <div className="w-2 h-2 rounded-full loading-dot" style={{ background: solGreen }} />
                     </div>
                   </div>
                 ) : leaderboard.length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-white/40 text-sm mb-4">No users yet. Be the first to earn XP!</p>
-                    {!walletConnected && <button onClick={() => { setShowLeaderboard(false); setShowWalletPrompt(true); }} className={`${btnPrimary} text-white rounded-xl px-5 py-2.5 font-medium text-sm`}>Connect Wallet</button>}
+                    {!walletConnected && (
+                      <button onClick={() => { setShowLeaderboard(false); setShowWalletPrompt(true); }} className={`${btnPrimary} text-black font-semibold rounded-xl px-5 py-2.5 text-sm`}>
+                        Connect Wallet
+                      </button>
+                    )}
                   </div>
                 ) : leaderboard.map((user, index) => (
-                  <div key={user.wallet_address} className={`flex items-center justify-between p-3 rounded-xl transition-all duration-200 ${walletAddress === user.wallet_address ? 'bg-purple-500/15 border border-purple-500/20' : `bg-white/[0.02] ${glassHover}`}`}>
+                  <div key={user.wallet_address} className={`flex items-center justify-between p-3 rounded-xl transition-all duration-200 ${walletAddress === user.wallet_address ? 'border' : `${panelHover} border border-transparent`}`}
+                    style={walletAddress === user.wallet_address ? { background: 'rgba(153,69,255,0.1)', borderColor: 'rgba(153,69,255,0.3)' } : { background: 'rgba(255,255,255,0.02)' }}>
                     <div className="flex items-center gap-3">
                       <div className="w-6 flex justify-center">{getRankIcon(index)}</div>
                       <div>
-                        <span className="text-white/90 text-sm font-mono tracking-tight">{shortenAddress(user.wallet_address)}</span>
-                        {walletAddress === user.wallet_address && <span className="ml-2 text-[10px] text-purple-400 font-medium">you</span>}
+                        <span className="text-white/80 text-sm font-mono tracking-tight">{shortenAddress(user.wallet_address)}</span>
+                        {walletAddress === user.wallet_address && <span className="ml-2 text-[10px] font-medium" style={{ color: solPurple }}>you</span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-white/30 text-xs tabular-nums">{user.questions_asked || 0} Q's</span>
-                      <span className="text-yellow-400/90 font-semibold text-sm tabular-nums">{user.xp || 0} XP</span>
+                      <span className="font-semibold text-sm tabular-nums" style={{ color: solGreen }}>{user.xp || 0} XP</span>
                     </div>
                   </div>
                 ))}
               </div>
               <div className="mt-4 pt-4 border-t border-white/[0.06]">
-                <button onClick={loadLeaderboard} disabled={leaderboardLoading} className={`w-full ${btnGlass} text-white/60 rounded-xl px-4 py-2.5 font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-40`}>
+                <button onClick={loadLeaderboard} disabled={leaderboardLoading} className={`w-full ${btnPanel} text-white/50 rounded-xl px-4 py-2.5 font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-40`}>
                   {leaderboardLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : '↻'} Refresh
                 </button>
               </div>
@@ -481,22 +505,23 @@ function App() {
             CHAT HISTORY DRAWER
             ═══════════════════════════════════════ */}
         {showChatHistory && walletConnected && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex" onClick={() => setShowChatHistory(false)}>
-            <div className={`backdrop-blur-2xl bg-[#0d0d1a]/95 border-r border-white/[0.06] w-72 max-w-[80vw] h-full p-5 overflow-y-auto glass-reveal`} onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex" onClick={() => setShowChatHistory(false)}>
+            <div className="border-r border-white/[0.06] w-72 max-w-[80vw] h-full p-5 overflow-y-auto modal-reveal" style={{ background: '#0d0d1a' }} onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-white font-semibold text-base">History</h3>
-                <button onClick={() => setShowChatHistory(false)} className="text-white/40 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+                <button onClick={() => setShowChatHistory(false)} className="text-white/30 hover:text-white/70 transition-colors"><X className="w-5 h-5" /></button>
               </div>
-              <button onClick={startNewChat} className={`w-full ${btnPrimary} text-white rounded-xl px-3 py-2.5 font-medium text-sm flex items-center justify-center gap-2 mb-5`}>
+              <button onClick={startNewChat} className={`w-full ${btnPrimary} text-black font-semibold rounded-xl px-3 py-2.5 text-sm flex items-center justify-center gap-2 mb-5`}>
                 <Plus className="w-4 h-4" /> New Chat
               </button>
               {savedChats.length === 0 ? <p className="text-white/30 text-sm text-center mt-8">No saved chats yet</p> : (
                 <div className="space-y-1.5">
                   {savedChats.map((chat) => (
-                    <div key={chat.id} onClick={() => loadChat(chat)} className={`p-3 rounded-xl cursor-pointer group transition-all duration-200 ${currentChatId === chat.id ? 'bg-purple-500/15 border border-purple-500/20' : 'hover:bg-white/[0.04]'}`}>
+                    <div key={chat.id} onClick={() => loadChat(chat)} className={`p-3 rounded-xl cursor-pointer group transition-all duration-200 ${currentChatId === chat.id ? 'border' : 'hover:bg-white/[0.04] border border-transparent'}`}
+                      style={currentChatId === chat.id ? { background: 'rgba(153,69,255,0.1)', borderColor: 'rgba(153,69,255,0.3)' } : {}}>
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="text-white/80 text-sm truncate">{chat.title}</p>
+                          <p className="text-white/70 text-sm truncate">{chat.title}</p>
                           <p className="text-white/25 text-xs mt-0.5">{new Date(chat.updated_at).toLocaleDateString()}</p>
                         </div>
                         <button onClick={(e) => deleteChat(chat.id, e)} className="text-white/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
@@ -513,61 +538,64 @@ function App() {
             WALLET PROMPT MODAL
             ═══════════════════════════════════════ */}
         {showWalletPrompt && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 py-4" onClick={() => setShowWalletPrompt(false)}>
-            <div className={`${glassBright} rounded-3xl p-6 max-w-sm w-full max-h-[85vh] overflow-y-auto relative glass-reveal`} onClick={e => e.stopPropagation()}>
-              <button onClick={() => setShowWalletPrompt(false)} className="absolute top-4 right-4 text-white/30 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 px-4 py-4" onClick={() => setShowWalletPrompt(false)}>
+            <div className={`${panelBright} rounded-3xl p-6 max-w-sm w-full max-h-[85vh] overflow-y-auto relative modal-reveal`} onClick={e => e.stopPropagation()}>
+              <button onClick={() => setShowWalletPrompt(false)} className="absolute top-4 right-4 text-white/30 hover:text-white/70 transition-colors"><X className="w-5 h-5" /></button>
               <div className="text-center">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mx-auto mb-4 border border-white/[0.08]">
-                  <Wallet className="w-6 h-6 text-purple-300" />
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'linear-gradient(135deg, rgba(153,69,255,0.2), rgba(0,255,163,0.2))', border: '1px solid rgba(153,69,255,0.25)' }}>
+                  <Wallet className="w-6 h-6" style={{ color: solPurple }} />
                 </div>
                 <h2 className="text-xl font-semibold text-white mb-2">Connect Wallet</h2>
                 <p className="text-white/50 text-sm mb-1">You've explored 5 questions! 🎉</p>
                 <p className="text-white/30 text-xs mb-5">Free forever. Connect to unlock unlimited questions + XP.</p>
-                
+
                 {isMobile && !isInWalletBrowser() && (
-                  <div className={`${glass} rounded-xl p-3 mb-4`}>
-                    <p className="text-xs text-blue-300/80">📱 Tap a wallet to open this site in that wallet's browser</p>
+                  <div className={`${panel} rounded-xl p-3 mb-4`}>
+                    <p className="text-xs" style={{ color: solBlue }}>📱 Tap a wallet to open this site in that wallet's browser</p>
                   </div>
                 )}
-                
+
                 {findMwaWallet() && (
-                  <div className={`${glass} rounded-2xl p-4 mb-4 border-green-500/20`}>
-                    <p className="text-xs text-green-300/80 font-medium mb-3">📱 Solana Mobile Detected</p>
-                    <button onClick={() => { haptic(); connectWallet('seedvault'); }} className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white rounded-xl px-4 py-3 font-medium shadow-lg shadow-green-500/20 flex items-center justify-center gap-2 text-sm transition-all duration-300">
+                  <div className={`${panel} rounded-2xl p-4 mb-4`} style={{ borderColor: 'rgba(0,255,163,0.2)' }}>
+                    <p className="text-xs font-medium mb-3" style={{ color: solGreen }}>📱 Solana Mobile Detected</p>
+                    <button onClick={() => { haptic(); connectWallet('seedvault'); }} className={`w-full ${btnPrimary} text-black font-semibold rounded-xl px-4 py-3 flex items-center justify-center gap-2 text-sm`}>
                       <Wallet className="w-4 h-4" />Seed Vault
                     </button>
                   </div>
                 )}
-                
+
                 <div className="space-y-2 mb-5">
                   <p className="text-xs text-white/30 font-medium mb-2">{findMwaWallet() ? 'Or select a wallet:' : 'Select a wallet:'}</p>
                   {walletOptions.filter(w => !w.isMwa).map((wallet) => (
-                    <button key={wallet.id} onClick={() => { haptic(); connectWallet(wallet.id); }} className={`w-full ${btnGlass} text-white/80 hover:text-white rounded-xl px-4 py-3 font-medium flex items-center justify-center gap-2.5 text-sm`}>
-                      <Wallet className="w-4 h-4 text-purple-400" />
+                    <button key={wallet.id} onClick={() => { haptic(); connectWallet(wallet.id); }} className={`w-full ${btnPanel} text-white/70 hover:text-white rounded-xl px-4 py-3 font-medium flex items-center justify-center gap-2.5 text-sm`}>
+                      <Wallet className="w-4 h-4" style={{ color: solPurple }} />
                       {wallet.name}
                       {isMobile && !isInWalletBrowser() && !wallet.isMwa && <ExternalLink className="w-3 h-3 text-white/20" />}
                     </button>
                   ))}
                 </div>
-                
+
                 <div className="relative my-5">
                   <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/[0.06]" /></div>
-                  <div className="relative flex justify-center text-xs"><span className="bg-[#0d0d1a] px-3 text-white/25">New to crypto?</span></div>
+                  <div className="relative flex justify-center text-xs"><span className="px-3 text-white/25" style={{ background: '#0d0d1a' }}>New to crypto?</span></div>
                 </div>
-                
-                <div className={`${glass} rounded-2xl p-4 mb-4 text-left`}>
-                  <h3 className="text-white/80 font-medium text-sm mb-3 flex items-center gap-2"><Sparkles className="w-4 h-4 text-purple-400" />Create a wallet in 2 min</h3>
+
+                <div className={`${panel} rounded-2xl p-4 mb-4 text-left`}>
+                  <h3 className="text-white/80 font-medium text-sm mb-3 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" style={{ color: solPurple }} />
+                    Create a wallet in 2 min
+                  </h3>
                   <ol className="text-xs text-white/40 space-y-2">
-                    <li className="flex gap-2.5"><span className="text-purple-400 font-semibold">1.</span>Tap any wallet above to visit their site</li>
-                    <li className="flex gap-2.5"><span className="text-purple-400 font-semibold">2.</span>Install the extension or mobile app</li>
-                    <li className="flex gap-2.5"><span className="text-purple-400 font-semibold">3.</span>Create a new wallet (30 seconds)</li>
-                    <li className="flex gap-2.5"><span className="text-purple-400 font-semibold">4.</span>Save your seed phrase securely</li>
-                    <li className="flex gap-2.5"><span className="text-purple-400 font-semibold">5.</span>Return here and connect</li>
+                    <li className="flex gap-2.5"><span className="font-semibold" style={{ color: solGreen }}>1.</span>Tap any wallet above to visit their site</li>
+                    <li className="flex gap-2.5"><span className="font-semibold" style={{ color: solGreen }}>2.</span>Install the extension or mobile app</li>
+                    <li className="flex gap-2.5"><span className="font-semibold" style={{ color: solGreen }}>3.</span>Create a new wallet (30 seconds)</li>
+                    <li className="flex gap-2.5"><span className="font-semibold" style={{ color: solGreen }}>4.</span>Save your seed phrase securely</li>
+                    <li className="flex gap-2.5"><span className="font-semibold" style={{ color: solGreen }}>5.</span>Return here and connect</li>
                   </ol>
                   <p className="text-[10px] text-white/20 mt-3">💡 Free, no personal info, no crypto needed.</p>
                 </div>
-                
-                <button onClick={() => setShowWalletPrompt(false)} className={`w-full ${btnGlass} text-white/40 rounded-xl px-4 py-2.5 font-medium text-sm`}>Maybe Later</button>
+
+                <button onClick={() => setShowWalletPrompt(false)} className={`w-full ${btnPanel} text-white/40 rounded-xl px-4 py-2.5 font-medium text-sm`}>Maybe Later</button>
                 <p className="text-[10px] text-white/15 mt-3">No transactions • Just sign-in</p>
               </div>
             </div>
@@ -577,34 +605,29 @@ function App() {
         {/* ═══════════════════════════════════════
             PRICE TICKER BAR
             ═══════════════════════════════════════ */}
-        <div className="relative z-10 border-b border-white/[0.04] px-3 py-2">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex justify-center items-center gap-4 sm:gap-8 mb-1.5">
-              {solPrice && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-purple-300/60 font-medium text-[10px] sm:text-xs tracking-wide">SOL</span>
-                  <span className="text-white/80 font-semibold text-[10px] sm:text-xs tabular-nums">${solPrice.price.toFixed(2)}</span>
-                  <span className={`text-[9px] sm:text-[10px] font-medium tabular-nums ${solPrice.change >= 0 ? 'text-green-400/80' : 'text-red-400/80'}`}>
-                    {solPrice.change >= 0 ? '+' : ''}{solPrice.change.toFixed(1)}%
-                  </span>
-                </div>
-              )}
-              {btcPrice && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-orange-300/60 font-medium text-[10px] sm:text-xs tracking-wide">BTC</span>
-                  <span className="text-white/80 font-semibold text-[10px] sm:text-xs tabular-nums">${(btcPrice.price / 1000).toFixed(1)}k</span>
-                  <span className={`text-[9px] sm:text-[10px] font-medium tabular-nums ${btcPrice.change >= 0 ? 'text-green-400/80' : 'text-red-400/80'}`}>
-                    {btcPrice.change >= 0 ? '+' : ''}{btcPrice.change.toFixed(1)}%
-                  </span>
-                </div>
-              )}
-            </div>
-            <div className="flex justify-center">
-              <div className={`${glass} rounded-full px-3 py-1`}>
-                <p className="text-[9px] sm:text-xs text-white/40 text-center">
-                  <span className="text-green-400/60 font-medium">Free</span> · 5 questions · Connect wallet for unlimited
-                </p>
+        <div className="relative z-10 border-b border-white/[0.05] px-4 py-2.5" style={{ background: '#060608' }}>
+          <div className="max-w-6xl mx-auto flex justify-center items-center gap-6 sm:gap-10">
+            {solPrice && (
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-[11px] tracking-widest uppercase" style={{ color: solPurple }}>SOL</span>
+                <span className="font-semibold text-xs text-white/80 tabular-nums">${solPrice.price.toFixed(2)}</span>
+                <span className={`text-[10px] tabular-nums ${solPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {solPrice.change >= 0 ? '+' : ''}{solPrice.change.toFixed(1)}%
+                </span>
               </div>
+            )}
+            {btcPrice && (
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-[11px] tracking-widest uppercase" style={{ color: '#f7931a' }}>BTC</span>
+                <span className="font-semibold text-xs text-white/80 tabular-nums">${(btcPrice.price / 1000).toFixed(1)}k</span>
+                <span className={`text-[10px] tabular-nums ${btcPrice.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {btcPrice.change >= 0 ? '+' : ''}{btcPrice.change.toFixed(1)}%
+                </span>
+              </div>
+            )}
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: 'rgba(0,255,163,0.06)', border: '1px solid rgba(0,255,163,0.15)' }}>
+              <span className="font-semibold text-[10px]" style={{ color: solGreen }}>Free</span>
+              <span className="text-white/30 text-[10px]">· 5 questions · Connect wallet for unlimited</span>
             </div>
           </div>
         </div>
@@ -612,52 +635,56 @@ function App() {
         {/* ═══════════════════════════════════════
             MAIN CONTENT AREA
             ═══════════════════════════════════════ */}
-        <div className="flex-1 flex flex-col items-center px-3 sm:px-4 pt-3 sm:pt-6 pb-4 overflow-y-auto relative z-10">
+        <div className="flex-1 flex flex-col items-center px-3 sm:px-4 pt-4 sm:pt-6 pb-4 overflow-y-auto relative z-10">
           <div className="w-full max-w-4xl">
 
             {/* ── Mobile Header ── */}
-            <div className="block sm:hidden mb-3">
+            <div className="block sm:hidden mb-4">
               <div className="flex items-center gap-2 mb-2">
                 {walletConnected && (
-                  <button onClick={() => { haptic(); setShowChatHistory(true); }} className={`${btnGlass} p-1.5 rounded-xl`}>
-                    <MessageSquare className="w-4 h-4 text-purple-300/60" />
+                  <button onClick={() => { haptic(); setShowChatHistory(true); }} className={`${btnPanel} p-2 rounded-xl`}>
+                    <MessageSquare className="w-4 h-4 text-white/40" />
                   </button>
                 )}
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center flex-shrink-0 border border-white/[0.08]">
-                  <Sparkles className="w-4 h-4 text-purple-300" />
+                {/* Brand icon */}
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #9945FF, #00FFA3)' }}>
+                  <Sparkles className="w-4 h-4 text-black" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-base font-semibold text-white/90 leading-tight tracking-tight">smsai.fun</h1>
+                  <h1 className="text-base font-bold text-white leading-tight tracking-tight">smsai.fun</h1>
                   <p className="text-[10px] text-white/30">AI Guide to Solana</p>
                 </div>
-                <button onClick={() => { haptic(); openLeaderboard(); }} className={`${btnGlass} p-1.5 rounded-xl`}>
-                  <Trophy className="w-4 h-4 text-yellow-400/60" />
+                <button onClick={() => { haptic(); openLeaderboard(); }} className={`${btnPanel} p-2 rounded-xl`}>
+                  <Trophy className="w-4 h-4 text-yellow-400/70" />
                 </button>
                 {walletConnected ? (
                   <div ref={walletMenuRef} className="relative">
-                    <button onClick={() => setShowWalletMenu(!showWalletMenu)} className={`${btnGlass} flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl`}>
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                    <button onClick={() => setShowWalletMenu(!showWalletMenu)} className={`${btnPanel} flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl`}>
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: solGreen }} />
                       <span className="text-[10px] text-white/70 font-mono">{shortenAddress(walletAddress)}</span>
                       <ChevronDown className="w-3 h-3 text-white/30" />
                     </button>
                     {showWalletMenu && (
-                      <div className={`absolute right-0 top-full mt-1.5 ${glassBright} rounded-xl shadow-2xl shadow-black/40 z-50 min-w-[140px] glass-reveal`}>
+                      <div className={`absolute right-0 top-full mt-1.5 ${panelBright} rounded-xl shadow-2xl z-50 min-w-[140px] modal-reveal`}>
                         <div className="px-3 py-2 border-b border-white/[0.06] text-[10px] text-white/40">{userXP} XP · {questionCount} questions</div>
-                        <button onClick={(e) => { e.stopPropagation(); disconnectWallet(); }} className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-red-400/80 hover:text-red-400 hover:bg-red-500/5 transition-colors rounded-b-xl"><LogOut className="w-3 h-3" />Disconnect</button>
+                        <button onClick={(e) => { e.stopPropagation(); disconnectWallet(); }} className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-red-400/80 hover:text-red-400 hover:bg-red-500/5 transition-colors rounded-b-xl">
+                          <LogOut className="w-3 h-3" />Disconnect
+                        </button>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <button onClick={() => { haptic(); setShowWalletPrompt(true); }} className={`${btnPrimary} text-white px-3 py-1.5 rounded-xl text-[10px] font-medium flex items-center gap-1.5`}>
+                  <button onClick={() => { haptic(); setShowWalletPrompt(true); }} className={`${btnPrimary} text-black font-semibold px-3 py-1.5 rounded-xl text-[10px] flex items-center gap-1.5`}>
                     <Wallet className="w-3 h-3" />Connect
                   </button>
                 )}
               </div>
-              <div className="flex items-center justify-between mb-2">
+              {/* Mobile social row */}
+              <div className="flex items-center justify-between">
                 <span className="text-[9px] text-white/20 tabular-nums">{sessionCount} visits</span>
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-3">
                   {socialLinks.map((link) => (
-                    <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="text-white/20 hover:text-white/60 transition-colors">
+                    <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="text-white/20 hover:text-white/50 transition-colors">
                       <link.Icon className="w-3.5 h-3.5" />
                     </a>
                   ))}
@@ -667,43 +694,63 @@ function App() {
 
             {/* ── Desktop Header ── */}
             <div className="hidden sm:block">
+              {/* Row 1: brand + socials */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
                   {walletConnected && (
-                    <button onClick={() => { haptic(); setShowChatHistory(true); }} className={`${btnGlass} flex items-center gap-2 p-2.5 rounded-xl`} title="Chat History">
-                      <MessageSquare className="w-4 h-4 text-purple-300/60" />
+                    <button onClick={() => { haptic(); setShowChatHistory(true); }} className={`${btnPanel} flex items-center gap-2 px-3 py-2.5 rounded-xl`}>
+                      <MessageSquare className="w-4 h-4 text-white/40" />
                       <span className="text-xs text-white/40">History</span>
                     </button>
                   )}
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/15 to-pink-500/15 flex items-center justify-center border border-white/[0.08]">
-                    <Sparkles className="w-5 h-5 text-purple-300" />
+                  {/* Brand icon — gradient */}
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #9945FF, #00FFA3)' }}>
+                    <Sparkles className="w-5 h-5 text-black" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-semibold text-white/90 tracking-tight">smsai.fun</h1>
+                    <h1 className="text-2xl font-bold text-white tracking-tight">smsai.fun</h1>
                     <p className="text-sm text-white/30">Your AI Guide to Solana</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+
+                {/* Social icons with labels */}
+                <div className="flex items-center gap-5">
                   {socialLinks.map((link) => (
-                    <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-0.5 text-white/25 hover:text-white/60 transition-colors group">
-                      <link.Icon className="w-4 h-4" />
-                      <span className="text-[9px]">{link.label}</span>
+                    <a
+                      key={link.url}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-1 transition-all duration-150 group"
+                      style={{ color: 'rgba(255,255,255,0.25)' }}
+                      onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.65)'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.25)'}
+                    >
+                      <link.Icon className="w-[18px] h-[18px]" />
+                      <span style={{ fontSize: 10, letterSpacing: '0.02em' }}>{link.label}</span>
                     </a>
                   ))}
                 </div>
               </div>
+
+              {/* Row 2: visits + leaderboard + wallet */}
               <div className="flex items-center justify-between mb-6">
                 <span className="text-xs text-white/20 tabular-nums">{sessionCount} visits</span>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => { haptic(); openLeaderboard(); }} className={`${btnGlass} flex items-center gap-2 px-3 py-2 rounded-xl`}>
-                    <Trophy className="w-4 h-4 text-yellow-400/60" />
-                    <span className="text-sm text-white/50">Leaderboard</span>
+                  {/* Leaderboard button */}
+                  <button onClick={() => { haptic(); openLeaderboard(); }} className="flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-150" style={{ background: 'rgba(153,69,255,0.08)', border: '1px solid rgba(153,69,255,0.25)', color: solPurple }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(153,69,255,0.15)'; e.currentTarget.style.borderColor = 'rgba(153,69,255,0.5)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(153,69,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(153,69,255,0.25)'; }}>
+                    <Trophy className="w-4 h-4 text-yellow-400" />
+                    <span className="text-sm font-medium">Leaderboard</span>
                   </button>
+
+                  {/* Wallet */}
                   <div ref={walletMenuRef} className="relative">
                     {walletConnected ? (
                       <>
-                        <button onClick={() => setShowWalletMenu(!showWalletMenu)} className={`${btnGlass} flex items-center gap-2.5 px-3 py-2 rounded-xl`}>
-                          <div className="w-2 h-2 rounded-full bg-green-400" />
+                        <button onClick={() => setShowWalletMenu(!showWalletMenu)} className={`${btnPanel} flex items-center gap-2.5 px-3 py-2 rounded-full`}>
+                          <div className="w-2 h-2 rounded-full" style={{ background: solGreen, boxShadow: `0 0 6px ${solGreen}` }} />
                           <div className="text-left">
                             <div className="text-xs text-white/70 font-mono">{shortenAddress(walletAddress)}</div>
                             <div className="text-[10px] text-white/30">{userXP} XP · {questionCount} questions</div>
@@ -711,7 +758,7 @@ function App() {
                           <ChevronDown className="w-4 h-4 text-white/20" />
                         </button>
                         {showWalletMenu && (
-                          <div className={`absolute right-0 top-full mt-2 ${glassBright} rounded-xl shadow-2xl shadow-black/40 z-50 min-w-[160px] glass-reveal`}>
+                          <div className={`absolute right-0 top-full mt-2 ${panelBright} rounded-xl shadow-2xl z-50 min-w-[160px] modal-reveal`}>
                             <button onClick={(e) => { e.stopPropagation(); disconnectWallet(); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400/80 hover:text-red-400 hover:bg-red-500/5 transition-colors rounded-xl">
                               <LogOut className="w-4 h-4" />Disconnect
                             </button>
@@ -719,7 +766,7 @@ function App() {
                         )}
                       </>
                     ) : (
-                      <button onClick={() => { haptic(); setShowWalletPrompt(true); }} className={`${btnPrimary} text-white px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2`}>
+                      <button onClick={() => { haptic(); setShowWalletPrompt(true); }} className={`${btnPrimary} text-black font-semibold px-5 py-2.5 rounded-full text-sm flex items-center gap-2`}>
                         <Wallet className="w-4 h-4" />Connect Wallet
                       </button>
                     )}
@@ -728,92 +775,116 @@ function App() {
               </div>
             </div>
 
+            {/* ── Freemium banner (mobile only) ── */}
+            <div className="sm:hidden mb-4 flex justify-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: 'rgba(0,255,163,0.06)', border: '1px solid rgba(0,255,163,0.15)' }}>
+                <div className="w-1.5 h-1.5 rounded-full" style={{ background: solGreen }} />
+                <span className="text-[10px] text-white/40"><span className="font-semibold" style={{ color: solGreen }}>Free</span> · 5 questions · Connect wallet for unlimited</span>
+              </div>
+            </div>
+
             {/* ── Quick Start Questions ── */}
             {messages.length === 1 && (
-              <div className="mb-4 sm:mb-6">
-                <p className="text-[10px] sm:text-xs text-white/25 mb-2.5 text-center tracking-wide uppercase">Quick Start</p>
+              <div className="mb-5 sm:mb-6">
+                <p className="text-[10px] sm:text-xs text-white/25 mb-3 text-center tracking-widest uppercase">Quick Start</p>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3 max-w-2xl mx-auto">
                   {quickStartQuestions.map((q, i) => (
                     <button
                       key={i}
                       onClick={() => { haptic(); handleSubmit(q.text); }}
-                      className={`${btnGlass} group text-white/70 hover:text-white px-3 sm:px-5 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl text-left flex items-center gap-2 sm:gap-3`}
+                      className={`${btnPanel} group text-left flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl`}
                     >
-                      {q.icon === 'wallet' 
-                        ? <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 text-purple-400/60 group-hover:text-purple-300 transition-colors" /> 
-                        : <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 text-purple-400/60 group-hover:text-purple-300 transition-colors" />
-                      }
-                      <span className="text-[11px] sm:text-sm font-medium">{q.text}</span>
+                      {/* Gradient mini icon */}
+                      <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #9945FF, #00FFA3)' }}>
+                        {q.icon === 'wallet'
+                          ? <Wallet className="w-3 h-3 text-black" />
+                          : <Sparkles className="w-3 h-3 text-black" />
+                        }
+                      </div>
+                      <span className="text-[11px] sm:text-sm font-medium text-white/70 group-hover:text-white transition-colors">{q.text}</span>
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
+            {/* ── Solana divider ── */}
+            {messages.length === 1 && <div className="sol-divider max-w-2xl mx-auto mb-5" />}
+
             {/* ═══════════════════════════════════════
                 MESSAGES
                 ═══════════════════════════════════════ */}
             <div className="space-y-3 sm:space-y-4 mb-20 sm:mb-24 max-w-2xl mx-auto">
               {messages.map((message, index) => (
-                <div key={index} className={`flex gap-2.5 msg-enter ${message.role === 'user' ? 'justify-end' : 'justify-start'}`} style={{ animationDelay: `${index * 0.05}s` }}>
+                <div key={index} className={`flex gap-2.5 msg-enter ${message.role === 'user' ? 'justify-end' : 'justify-start'}`} style={{ animationDelay: `${index * 0.04}s` }}>
                   {message.role === 'assistant' && (
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-purple-500/15 to-pink-500/15 flex items-center justify-center flex-shrink-0 border border-white/[0.06] mt-0.5">
-                      <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-purple-300/80" />
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'linear-gradient(135deg, #9945FF, #00FFA3)' }}>
+                      <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-black" />
                     </div>
                   )}
                   <div className={`max-w-[85%] ${message.role === 'user' ? 'order-1' : ''}`}>
                     <div className={`rounded-2xl px-3.5 sm:px-4 py-2.5 sm:py-3 ${
-                      message.role === 'user' 
-                        ? `${btnPrimary} text-white` 
-                        : `${glass} text-white/85`
-                    }`}>
-                      <ReactMarkdown className="prose prose-invert prose-sm max-w-none text-xs sm:text-[15px] leading-relaxed [&>p]:mb-2 [&>p:last-child]:mb-0 [&>ul]:mb-2 [&>ol]:mb-2 [&_strong]:text-white [&_a]:text-purple-300 [&_a]:underline [&_a]:underline-offset-2 [&_code]:text-pink-300/80 [&_code]:bg-white/[0.06] [&_code]:px-1 [&_code]:rounded">
+                      message.role === 'user'
+                        ? `text-black font-medium`
+                        : `text-white/85`
+                    }`}
+                      style={message.role === 'user'
+                        ? { background: 'linear-gradient(135deg, #9945FF, #00FFA3)' }
+                        : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }
+                      }>
+                      <ReactMarkdown className={`prose prose-sm max-w-none text-xs sm:text-[15px] leading-relaxed [&>p]:mb-2 [&>p:last-child]:mb-0 [&>ul]:mb-2 [&>ol]:mb-2 [&_strong]:font-semibold [&_a]:underline [&_a]:underline-offset-2 [&_code]:px-1 [&_code]:rounded ${
+                        message.role === 'user'
+                          ? 'prose-invert [&_strong]:text-black [&_a]:text-black/80 [&_code]:bg-black/10 [&_code]:text-black/80'
+                          : 'prose-invert [&_strong]:text-white [&_a]:text-[#03E1FF] [&_code]:bg-white/[0.06] [&_code]:text-[#00FFA3]'
+                      }`}>
                         {message.content}
                       </ReactMarkdown>
                     </div>
                     <div className="text-[9px] sm:text-[10px] text-white/20 mt-1 px-1 font-mono">{formatTime(message.timestamp)}</div>
                   </div>
                   {message.role === 'user' && (
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-blue-500/15 to-cyan-500/15 flex items-center justify-center flex-shrink-0 border border-white/[0.06] mt-0.5">
-                      <User className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-300/80" />
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'rgba(3,225,255,0.1)', border: '1px solid rgba(3,225,255,0.2)' }}>
+                      <User className="w-3 h-3 sm:w-3.5 sm:h-3.5" style={{ color: solBlue }} />
                     </div>
                   )}
                 </div>
               ))}
+
               {loading && (
                 <div className="flex gap-2.5 msg-enter">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-purple-500/15 to-pink-500/15 flex items-center justify-center border border-white/[0.06]">
-                    <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-purple-300/80" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #9945FF, #00FFA3)' }}>
+                    <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-black" />
                   </div>
-                  <div className={`${glass} rounded-2xl px-4 py-3 flex gap-1.5`}>
-                    <div className="w-1.5 h-1.5 rounded-full bg-purple-400/60 loading-dot" />
-                    <div className="w-1.5 h-1.5 rounded-full bg-purple-400/60 loading-dot" />
-                    <div className="w-1.5 h-1.5 rounded-full bg-purple-400/60 loading-dot" />
+                  <div className="rounded-2xl px-4 py-3 flex gap-1.5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <div className="w-1.5 h-1.5 rounded-full loading-dot" style={{ background: solPurple }} />
+                    <div className="w-1.5 h-1.5 rounded-full loading-dot" style={{ background: solBlue }} />
+                    <div className="w-1.5 h-1.5 rounded-full loading-dot" style={{ background: solGreen }} />
                   </div>
                 </div>
               )}
               <div ref={messagesEndRef} />
             </div>
+
           </div>
         </div>
 
         {/* ═══════════════════════════════════════
             INPUT BAR
             ═══════════════════════════════════════ */}
-        <div className="fixed bottom-0 left-0 right-0 backdrop-blur-2xl bg-[#0a0a14]/80 border-t border-white/[0.04] p-2.5 sm:p-4 z-20">
+        <div className="fixed bottom-0 left-0 right-0 border-t border-white/[0.05] p-2.5 sm:p-4 z-20" style={{ background: 'rgba(10,10,15,0.92)', backdropFilter: 'blur(20px)' }}>
           <div className="max-w-2xl mx-auto">
             {!walletConnected && questionCount > 0 && questionCount < 5 && (
               <div className="mb-2 text-center">
-                <span className={`inline-block ${glass} text-white/40 text-[9px] sm:text-xs px-3 py-1 rounded-full font-medium`}>
+                <span className="inline-block text-white/40 text-[9px] sm:text-xs px-3 py-1 rounded-full font-medium" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                   {5 - questionCount} free question{5 - questionCount !== 1 ? 's' : ''} left
                 </span>
               </div>
             )}
             {!walletConnected && questionCount >= 5 && (
               <div className="mb-2.5 text-center">
-                <div className={`inline-flex flex-col items-center gap-1.5 ${glass} text-white/60 text-[10px] sm:text-sm px-4 py-2.5 rounded-xl`}>
+                <div className="inline-flex flex-col items-center gap-1.5 text-white/60 text-[10px] sm:text-sm px-4 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <span>5 free questions used</span>
-                  <button onClick={() => setShowWalletPrompt(true)} className={`${btnPrimary} text-white px-4 py-1.5 rounded-lg font-medium flex items-center gap-1.5 text-[10px] sm:text-sm`}>
+                  <button onClick={() => setShowWalletPrompt(true)} className={`${btnPrimary} text-black font-semibold px-4 py-1.5 rounded-lg flex items-center gap-1.5 text-[10px] sm:text-sm`}>
                     <Wallet className="w-3 h-3" />Connect to Continue
                   </button>
                 </div>
@@ -821,7 +892,7 @@ function App() {
             )}
             <div className="flex gap-2 sm:gap-2.5">
               {messages.length > 1 && (
-                <button type="button" onClick={() => { haptic(); startNewChat(); }} className={`${btnGlass} text-white/50 p-2.5 sm:p-3 rounded-xl`} title="New Chat">
+                <button type="button" onClick={() => { haptic(); startNewChat(); }} className={`${btnPanel} text-white/40 p-2.5 sm:p-3 rounded-xl`} title="New Chat">
                   <Home className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               )}
@@ -832,15 +903,16 @@ function App() {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={!walletConnected && questionCount >= 5 ? "Connect wallet to continue..." : "Ask about Solana..."}
                   disabled={loading || (!walletConnected && questionCount >= 5)}
-                  className={`flex-1 ${glassInput} text-white/90 placeholder-white/25 focus:outline-none disabled:opacity-40 px-4 py-2.5 sm:py-3 rounded-xl text-sm transition-all duration-300`}
+                  className={`flex-1 ${inputStyle} text-white/90 placeholder-white/20 focus:outline-none disabled:opacity-40 px-4 py-2.5 sm:py-3 rounded-xl text-sm transition-all duration-200`}
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
                 />
                 <button
                   type="submit"
                   disabled={loading || !input.trim() || (!walletConnected && questionCount >= 5)}
                   onClick={() => haptic()}
-                  className={`${btnPrimary} text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium disabled:opacity-30 disabled:shadow-none`}
+                  className={`${btnPrimary} text-black font-semibold px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl disabled:opacity-30`}
                 >
-                  {loading ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <Send className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  {loading ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-black" /> : <Send className="w-4 h-4 sm:w-5 sm:h-5" />}
                 </button>
               </form>
             </div>
@@ -853,6 +925,7 @@ function App() {
             </div>
           </div>
         </div>
+
       </div>
     </>
   );
