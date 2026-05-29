@@ -7,8 +7,6 @@ const anthropic = new Anthropic({
 });
 
 // ─── Solana Docs .md Fetcher ───
-// Leverages solana.com/docs/*.md endpoints (LLM-ready markdown)
-
 const SOLANA_DOCS_MAP = {
   'account': 'https://solana.com/docs/core/accounts.md',
   'accounts': 'https://solana.com/docs/core/accounts.md',
@@ -25,6 +23,8 @@ const SOLANA_DOCS_MAP = {
   'tokens': 'https://solana.com/docs/core/tokens.md',
   'spl token': 'https://solana.com/docs/core/tokens.md',
   'spl tokens': 'https://solana.com/docs/core/tokens.md',
+  'token extensions': 'https://solana.com/docs/core/tokens.md',
+  'token 2022': 'https://solana.com/docs/core/tokens.md',
   'validator': 'https://solana.com/docs/core.md',
   'validators': 'https://solana.com/docs/core.md',
   'consensus': 'https://solana.com/docs/core.md',
@@ -34,10 +34,12 @@ const SOLANA_DOCS_MAP = {
   'stake': 'https://solana.com/docs/economics/staking.md',
   'staking': 'https://solana.com/docs/economics/staking.md',
   'delegation': 'https://solana.com/docs/economics/staking.md',
+  'unstake': 'https://solana.com/docs/economics/staking.md',
   'wallet': 'https://solana.com/docs/intro/wallets.md',
   'wallets': 'https://solana.com/docs/intro/wallets.md',
   'seed phrase': 'https://solana.com/docs/intro/wallets.md',
   'keypair': 'https://solana.com/docs/intro/wallets.md',
+  'private key': 'https://solana.com/docs/intro/wallets.md',
   'rpc': 'https://solana.com/docs/rpc.md',
   'cluster': 'https://solana.com/docs/core/clusters.md',
   'clusters': 'https://solana.com/docs/core/clusters.md',
@@ -49,9 +51,20 @@ const SOLANA_DOCS_MAP = {
   'fee': 'https://solana.com/docs/core/fees.md',
   'fees': 'https://solana.com/docs/core/fees.md',
   'priority fee': 'https://solana.com/docs/core/fees.md',
+  'priority fees': 'https://solana.com/docs/core/fees.md',
   'rent': 'https://solana.com/docs/core/fees.md',
   'nft': 'https://solana.com/docs/core/tokens.md',
   'nfts': 'https://solana.com/docs/core/tokens.md',
+  'compressed nft': 'https://solana.com/docs/core/tokens.md',
+  'cnft': 'https://solana.com/docs/core/tokens.md',
+  'action': 'https://solana.com/docs/advanced/actions.md',
+  'actions': 'https://solana.com/docs/advanced/actions.md',
+  'blink': 'https://solana.com/docs/advanced/actions.md',
+  'blinks': 'https://solana.com/docs/advanced/actions.md',
+  'blockchain link': 'https://solana.com/docs/advanced/actions.md',
+  'versioned transaction': 'https://solana.com/docs/advanced/versions.md',
+  'address lookup': 'https://solana.com/docs/advanced/lookup-tables.md',
+  'lookup table': 'https://solana.com/docs/advanced/lookup-tables.md',
 };
 
 // In-memory cache (persists across warm invocations on Vercel)
@@ -84,7 +97,6 @@ async function fetchSolanaDoc(url) {
     clearTimeout(timeout);
     if (!response.ok) return null;
     const content = await response.text();
-    // Trim to ~2500 chars to keep context window manageable
     const trimmed = content.length > 2500
       ? content.slice(0, 2500) + '\n\n[... truncated]'
       : content;
@@ -106,150 +118,162 @@ async function getSolanaDocsContext(userMessage) {
 }
 
 // ─── Static Knowledge Base ───
-
 const SOLANA_KNOWLEDGE = `
 ## Solana Quick Facts
 - Founded by Anatoly Yakovenko, launched March 2020
 - Uses Proof of History (PoH) + Proof of Stake (PoS)
 - ~400ms block time, 65,000+ TPS theoretical, ~$0.00025 per transaction
-- SOL token: pay fees, stake for 6-8% APY, governance
-- Current SOL price range: ~$200-300 (as of late 2025/early 2026)
+- SOL token: pay fees, stake for ~6-8% APY, governance
+- For current SOL price, always use web search — prices change constantly
+- One of the largest blockchains by daily active users and transaction volume
 
 ## Solana Mobile
-- **Solana Seeker** (2025): The second-generation Solana Mobile phone
+- **Solana Seeker** (2025): Second-generation Solana Mobile phone
   - Successor to the original Saga phone
   - More affordable than Saga, aimed at mainstream adoption
   - Built-in Seed Vault for secure key storage
   - Native support for Mobile Wallet Adapter (MWA)
-  - Comes with exclusive token airdrops and rewards for owners
-  - Features Android-based OS optimized for Web3
+  - Exclusive token airdrops and rewards for owners
+  - Android-based OS optimized for Web3
   - Integrated dApp Store for discovering Solana apps
-- **Saga** (2023): First-generation Solana phone, famous for BONK airdrop that made it valuable
-- **Seed Vault**: Hardware-level secure enclave on Solana Mobile devices for storing private keys
+  - SKR token powers the Seeker ecosystem
+- **Saga** (2023): First-generation Solana phone, famous for BONK airdrop
+- **Seed Vault**: Hardware-level secure enclave on Solana Mobile devices
 - **Mobile Wallet Adapter (MWA)**: Protocol for connecting dApps to mobile wallets securely
+- **Solana dApp Store**: Curated store for Solana-native mobile apps, no revenue cut to Apple/Google
 
 ## Wallets
-- **Phantom**: Most popular Solana wallet, browser extension + mobile app, supports Ethereum too
+- **Phantom**: Most popular Solana wallet, browser extension + mobile, supports ETH/BTC too
 - **Solflare**: Solana-native wallet, excellent staking features, mobile + extension
-- **Backpack**: By Mad Lads team, supports xNFTs (executable NFTs)
-- **Jupiter Mobile**: Jupiter's own wallet app with built-in swap functionality
+- **Backpack**: By Mad Lads team, supports xNFTs, multi-chain
+- **Jupiter Mobile**: Jupiter's own wallet with built-in swap
 - **Glow**: Fast, lightweight Solana wallet
 - Seed phrase: 12-24 words, NEVER share, store offline securely
-- Hardware wallets (Ledger) recommended for large amounts
+- Hardware wallets (Ledger) recommended for large holdings
 
 ## DeFi Ecosystem
 **DEXs & Aggregators:**
-- Jupiter: #1 DEX aggregator, routes through all DEXs for best price, JUP governance token
-- Raydium: AMM with concentrated liquidity, RAY token
-- Orca: User-friendly AMM, Whirlpools concentrated liquidity
-- OpenBook: On-chain order book (successor to Serum)
-- Phoenix: High-performance order book DEX
+- **Jupiter**: #1 DEX aggregator on Solana, routes trades for best price, JUP governance token, also offers perps, limit orders, DCA, and bridge
+- **Raydium**: AMM with concentrated liquidity, RAY token, major liquidity hub
+- **Orca**: User-friendly AMM, Whirlpools concentrated liquidity
+- **Meteora**: Dynamic liquidity pools, popular for new token launches
+- **OpenBook**: On-chain central limit order book
+- **Phoenix**: High-performance order book DEX
 
 **Lending & Borrowing:**
-- Kamino: Leading DeFi hub, lending, liquidity, and leverage
-- Marginfi: Lending protocol with points program
-- Solend: Original Solana lending protocol
+- **Kamino**: Leading DeFi hub — lending, liquidity vaults, leverage, KMNO token
+- **Marginfi**: Lending with points/rewards program, mrgn token
+- **Solend**: Original Solana lending protocol
 
 **Liquid Staking:**
-- Jito (JitoSOL): Liquid staking with MEV rewards, very popular
-- Marinade (mSOL): Decentralized stake pool, mSOL token
-- BlazeStake (bSOL): Community-focused liquid staking
-- Sanctum: LST aggregator, create custom LSTs, INF token
+- **Jito (JitoSOL)**: #1 liquid staking, includes MEV rewards, JTO governance token
+- **Marinade (mSOL)**: Decentralized stake pool, MNDE token
+- **BlazeStake (bSOL)**: Community-focused liquid staking
+- **Sanctum**: LST aggregator, INF token (holds all LSTs)
 
-**Perpetuals & Trading:**
-- Drift: Perpetual futures DEX
-- Jupiter Perps: Perpetual trading on Jupiter
-- Zeta Markets: Options and perpetuals
+**Perpetuals & Derivatives:**
+- **Drift**: Perpetual futures and spot DEX, DRIFT token
+- **Jupiter Perps**: Perpetual trading integrated into Jupiter
+- **Zeta Markets**: Options and perpetuals
 
 ## Staking
 - **Native Staking**: Delegate SOL to validator, ~6-8% APY, 2-3 day unstaking period
-- **Liquid Staking**: Get JitoSOL/mSOL/bSOL, use in DeFi while earning staking rewards
-- Choose validators by: uptime, commission (avoid 100%), stake distribution
-- Jito offers additional MEV rewards on top of base staking APY
+- **Liquid Staking**: Get JitoSOL/mSOL/bSOL, use in DeFi while earning rewards
+- Choose validators by: uptime, commission rate (avoid 100%), stake distribution for decentralization
+- Jito offers additional MEV rewards on top of base staking yield
 
 ## NFTs & Digital Collectibles
-- **Magic Eden**: Largest NFT marketplace, expanded to multi-chain
-- **Tensor**: Pro trading NFT marketplace, TNSR token, advanced trading features
-- **Compressed NFTs (cNFTs)**: 1000x cheaper to mint using state compression
-- **xNFTs**: Executable NFTs that run code (Backpack ecosystem)
-- Popular collections: Mad Lads, Tensorians, Famous Fox Federation, Claynosaurz
+- **Magic Eden**: Largest NFT marketplace, now multi-chain
+- **Tensor**: Pro NFT trading platform, TNSR token, advanced analytics
+- **Compressed NFTs (cNFTs)**: State compression makes minting ~1000x cheaper
+- **xNFTs**: Executable NFTs that run mini-apps (Backpack ecosystem)
+- Notable collections: Mad Lads, Tensorians, Famous Fox Federation, Claynosaurz, Okay Bears
 
 ## Memecoins & Token Launches
-- **pump.fun**: Popular platform for launching memecoins on Solana, bonding curve mechanism
-- **Moonshot**: Another memecoin launchpad
-- Popular memecoins: BONK (Solana's first big memecoin), WIF (dogwifhat), POPCAT, PENGU
-- HIGH RISK: rug pulls, pump & dumps, no intrinsic value
-- Always research before buying, never invest more than you can lose
-- Check if liquidity is locked/burned, verify contract on Solscan
+- **pump.fun**: Dominant memecoin launchpad on Solana, bonding curve model, huge volume
+- **pump.swap**: pump.fun's own DEX for graduated tokens
+- **Moonshot**: Alternative memecoin launchpad
+- **Believe**: Newer launchpad focused on "idea coins" / founder coins
+- Popular memecoins: BONK (Solana OG memecoin), WIF (dogwifhat), POPCAT, PENGU, TRUMP, MELANIA
+- ⚠️ HIGH RISK: most memecoins go to zero, rug pulls common
+- Always check: liquidity locked/burned, contract verified, team doxxed
+- Use Solscan or Birdeye to verify before buying
 
-## Solana Ecosystem Projects
-- **Jupiter**: DEX aggregator, JUP token, perps, limit orders, DCA
-- **Jito**: MEV infrastructure, liquid staking (JitoSOL), JTO token
-- **Marinade**: Liquid staking pioneer, mSOL, MNDE token
-- **Tensor**: NFT marketplace, TNSR token
-- **Helium**: Decentralized wireless network, migrated to Solana (HNT, MOBILE, IOT)
-- **Render**: Decentralized GPU rendering, RNDR token on Solana
-- **Pyth**: Oracle network providing price feeds
-- **Wormhole**: Cross-chain bridge protocol, W token
-- **Bonk**: Community memecoin, gained fame from Saga phone airdrop
+## Solana Ecosystem — Key Projects
+- **Jupiter (JUP)**: DEX aggregator, perps, limit orders, DCA, launchpad
+- **Jito (JTO)**: MEV infrastructure + liquid staking (JitoSOL)
+- **Marinade (MNDE)**: Liquid staking pioneer, mSOL
+- **Kamino (KMNO)**: DeFi hub — lending, leverage, liquidity
+- **Tensor (TNSR)**: NFT marketplace and trading infrastructure
+- **Pyth (PYTH)**: Oracle network, provides price feeds to DeFi protocols
+- **Wormhole (W)**: Cross-chain bridge and messaging protocol
+- **Helium (HNT)**: Decentralized wireless network on Solana
+- **Render (RENDER)**: Decentralized GPU rendering network
+- **Bonk (BONK)**: Community memecoin, Solana's mascot token
+- **Drift (DRIFT)**: Perpetuals and spot DEX
+- **Sanctum (CLOUD)**: LST aggregator and liquid staking hub
+- **Meteora**: Dynamic liquidity pools and DeFi infrastructure
+- **Firedancer**: New high-performance validator client by Jump Crypto (in development)
 
 ## Blinks & Actions
-- **Solana Actions**: URLs that trigger Solana transactions
-- **Blinks** (Blockchain Links): Share Actions anywhere on the internet
-- Allows transactions directly from social media, websites, etc.
-- Example: Tip someone SOL directly from a tweet
+- **Solana Actions**: Standard for URLs that trigger blockchain transactions
+- **Blinks** (Blockchain Links): Share Actions anywhere — social media, websites, emails
+- Enables one-click transactions from Twitter/X, Discord, anywhere with a link
+- Example use cases: tip SOL, mint NFT, swap tokens — all from a shareable link
+- Growing adoption across Solana ecosystem apps
 
-## Security Best Practices
-- NEVER share your seed phrase or private keys with anyone
-- Verify URLs before connecting wallet (phishing is common)
-- No legitimate project will DM you first asking to connect wallet
-- "Too good to be true" returns = almost certainly a scam
-- Use burner wallets for risky activities (airdrops, new mints)
-- Revoke unused token approvals regularly
-- Enable transaction simulation in your wallet
-- Be wary of fake airdrops and token approvals
-
-## Solana Technical Features
-- **Firedancer**: New validator client by Jump Crypto for better performance
-- **Token Extensions**: Advanced token features (transfer fees, confidential transfers, etc.)
-- **Compressed NFTs**: State compression for 1000x cheaper NFTs
-- **Priority Fees**: Pay extra to prioritize transactions during congestion
-- **Compute Units**: Measure of computational resources per transaction
-
-## Key Resources
-- solana.com - Official website
-- docs.solana.com - Developer documentation
-- solscan.io - Block explorer (view transactions, tokens, wallets)
-- solana.fm - Alternative block explorer
-- step.finance - Portfolio tracker
-- birdeye.so - Token analytics and charts
-- dexscreener.com - DEX analytics
-- helius.dev - RPC and developer tools
+## Token Extensions (Token-2022)
+- Next-generation token standard on Solana
+- Features: transfer fees, confidential transfers, permanent delegate, interest-bearing tokens
+- Enables compliant tokenization of real-world assets (RWAs)
+- Used by institutional projects requiring regulatory compliance
 
 ## DATs (Digital Asset Treasuries)
-- **What are DATs?**: Publicly traded companies that hold cryptocurrency (like SOL) on their balance sheets as a core treasury strategy
-- Similar to how MicroStrategy pioneered Bitcoin treasuries, DATs now exist for Solana, Ethereum, and other assets
-- Investors buy stock in DAT companies to gain exposure to crypto without holding it directly
-- **How DATs work**: Raise capital through stock/bond sales → Buy and hold crypto → Often stake holdings for additional yield
-- **Top Solana DATs** (as of late 2025):
-  - Forward Industries: Largest SOL holder (~6.9M SOL, ~1.1% of supply)
-  - DeFi Development Corp (DFDV): First public company focused on SOL accumulation
-  - Upexi: ~2M SOL holdings
-  - Sharps Technology: ~2M SOL holdings
-  - Solana Company (HSDT): Backed by Pantera, targeting 5% of SOL supply
-- **Why companies choose SOL**: Staking rewards (6-8% APY), high-performance blockchain, growing ecosystem
-- **Risks**: Price volatility can cause large unrealized losses, dilution from stock issuance
-- Solana DATs collectively hold ~15M+ SOL (~2.5% of total supply)
-- DATs differ from ETFs: actively managed, can use leverage, stake holdings, pursue M&A
+- Publicly traded companies holding SOL on their balance sheet as core treasury strategy
+- Similar to MicroStrategy's Bitcoin treasury model
+- **Key Solana DATs:**
+  - DeFi Development Corp (DFDV): Pioneer SOL treasury company
+  - Upexi: Significant SOL holdings
+  - Sol Strategies: SOL-focused treasury
+- Companies stake their SOL holdings to earn ~6-8% APY
+- Institutional route for SOL exposure without direct custody
+- Collectively hold significant % of circulating SOL supply
 
-## Current Trends (Late 2025/Early 2026)
-- Solana Mobile expanding with Seeker phone
-- Memecoins continue to be popular but risky
-- DeFi TVL growing with new protocols
-- Institutional interest increasing via DATs and upcoming ETFs
-- Focus on mobile-first Web3 experiences
-- Blinks enabling social commerce
-- DAT companies accumulating significant SOL supply
+## Real World Assets (RWAs)
+- Tokenizing real-world assets (bonds, real estate, commodities) on Solana
+- Growing sector with institutional interest
+- Token Extensions enable compliant RWA tokenization
+- Projects: Ondo Finance (tokenized treasuries), various stablecoin issuers
+
+## Security Best Practices
+- NEVER share seed phrase or private keys — no legitimate service will ask
+- Verify URLs before connecting wallet — phishing is extremely common
+- No project will DM you first asking to connect wallet
+- Use burner wallets for risky activities (new mints, unknown airdrops)
+- Revoke unused token approvals at revoke.cash
+- Enable transaction simulation in your wallet
+- Be wary of fake airdrops that require approving transactions
+- "Too good to be true" returns = almost certainly a scam
+
+## Solana Technical
+- **Firedancer**: New validator client by Jump Crypto, targets 1M+ TPS
+- **Token Extensions**: Advanced token features for enterprise/institutional use
+- **Compressed NFTs**: State compression for cheap minting at scale
+- **Priority Fees**: Pay extra lamports to prioritize transactions during congestion
+- **Compute Units (CU)**: Measure of computational work per transaction
+- **Versioned Transactions**: Support address lookup tables for complex txns
+- **QUIC**: Solana's transport protocol for validators
+
+## Key Tools & Resources
+- **solscan.io**: Block explorer — view transactions, tokens, wallets
+- **solana.fm**: Alternative explorer with more analytics
+- **birdeye.so**: Token charts and DeFi analytics
+- **dexscreener.com**: DEX pair analytics across chains
+- **step.finance**: Solana portfolio tracker
+- **helius.dev**: Premium RPC and developer APIs
+- **revoke.cash**: Revoke token approvals
+- **jito.wtf**: MEV and validator stats
+- **solanacompass.com**: Ecosystem stats and metrics
 `;
 
 const SYSTEM_PROMPT = `You are SMSai, a friendly and knowledgeable AI assistant created by Solana Made Simple (SMS). Your mission is to help people understand Solana and crypto in simple, approachable terms.
@@ -258,35 +282,36 @@ ${SOLANA_KNOWLEDGE}
 
 ## Your Personality
 - Friendly, patient, and encouraging
-- Explain complex topics simply - like talking to a smart friend who's new to crypto
+- Explain complex topics simply — like talking to a smart friend who knows crypto
 - Use analogies to everyday things when helpful
 - Be honest about risks (especially with memecoins and DeFi)
-- Never give financial advice - educate, don't recommend specific investments
+- Never give financial advice — educate, don't recommend specific investments
 
-## Guidelines
+## Response Guidelines
 - Keep responses concise but complete
 - Use bullet points for lists
-- Bold **key terms** when introducing them
+- Bold **key terms** when first introducing them
 - For wallet/security questions, always emphasize seed phrase safety
 - When discussing memecoins, always mention the risks
-- If users ask about Solana Seeker or Solana Mobile, you know about these!
-- When you use information from the official Solana docs context provided below, mention it naturally (e.g. "According to the official Solana docs..." or add a note like "📚 Source: Official Solana Documentation")
+- When you use official Solana docs context provided below, cite it naturally: "According to the official Solana docs..." or add 📚
 
-## When to Use Web Search
-- Questions about current prices, market data, or "right now" info
-- Recent news, announcements, or events you're unsure about
-- New projects, tokens, or protocols not in your knowledge base
-- Anything where the user asks "latest" or "current" or "today"
-- When you're not confident your knowledge is up-to-date
-- Do NOT search for basic concepts you already know (wallets, staking, DeFi basics)
+## When to Use Web Search (IMPORTANT)
+- **Always search for**: current SOL price, BTC price, any crypto price
+- **Always search for**: recent news, protocol updates, new launches from last few months
+- **Always search for**: anything the user asks about "latest", "current", "today", "recently", "now"
+- **Always search for**: new projects, tokens, or protocols you're less certain about
+- **Always search for**: recent governance votes, protocol changes, ecosystem news
+- **Don't search for**: basic concepts you already know well (what is staking, how wallets work, etc.)
+- When in doubt about whether info is current — search first
 
-## What You Can Help With
-- Explaining Solana concepts (wallets, staking, DeFi, NFTs)
-- How-to guides (setting up wallet, staking, swapping)
-- Understanding risks and security
-- Comparing protocols and options
+## What You Help With
+- Explaining Solana concepts (wallets, staking, DeFi, NFTs, memecoins)
+- Step-by-step guides (setting up wallet, staking, swapping tokens)
+- Understanding risks and how to stay safe
+- Comparing protocols and choosing between options
+- Solana Mobile (Seeker phone, Saga, Seed Vault, dApp Store)
+- Current ecosystem news and updates (via web search)
 - Troubleshooting common issues
-- Solana Mobile devices (Seeker, Saga, Seed Vault)
 
 ## What to Avoid
 - Specific investment advice ("you should buy X")
@@ -294,7 +319,7 @@ ${SOLANA_KNOWLEDGE}
 - Promoting specific memecoins
 - Guaranteeing returns or safety
 
-Remember: You represent Solana Made Simple - make crypto accessible and understandable for everyone!`;
+Remember: You represent Solana Made Simple — make crypto accessible and understandable for everyone, from complete beginners to intermediate users!`;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -316,10 +341,10 @@ export default async function handler(req, res) {
       content: msg.content
     }));
 
-    // Get the latest user message to check for relevant Solana docs
+    // Get the latest user message
     const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
-    
-    // Fetch relevant Solana docs context in parallel (non-blocking, with timeout)
+
+    // Fetch relevant Solana docs context (non-blocking)
     let docsContext = '';
     if (lastUserMessage) {
       try {
@@ -329,15 +354,15 @@ export default async function handler(req, res) {
       }
     }
 
-    // Build the system prompt with docs context injected
+    // Build contextual system prompt
     let contextualSystemPrompt = SYSTEM_PROMPT;
-    
+
     if (docsContext) {
       contextualSystemPrompt += docsContext;
     }
-    
+
     if (wallet_address) {
-      contextualSystemPrompt += `\n\nNote: This user has connected their Solana wallet, so they likely have some experience with crypto. You can be slightly more technical if appropriate, but still keep things accessible.`;
+      contextualSystemPrompt += `\n\nNote: This user has connected their Solana wallet — they likely have some hands-on crypto experience. You can be slightly more technical when appropriate, but still keep things clear and accessible.`;
     }
 
     const response = await anthropic.messages.create({
@@ -357,7 +382,7 @@ export default async function handler(req, res) {
         content += block.text;
       }
     }
-    
+
     if (!content) {
       content = "I'm sorry, I couldn't generate a response. Please try again.";
     }
@@ -366,7 +391,7 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Chat API error:', error);
-    
+
     if (error.status === 401) return res.status(500).json({ error: 'API authentication error' });
     if (error.status === 429) return res.status(429).json({ error: 'Rate limit exceeded. Please try again in a moment.' });
     return res.status(500).json({ error: 'Failed to process chat request' });
