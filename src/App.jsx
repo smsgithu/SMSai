@@ -201,8 +201,8 @@ function App() {
     { name: 'X', url: 'https://x.com/smsonx', Icon: XIcon, label: '@smsonx' },
     { name: 'X', url: 'https://x.com/solmadesimple', Icon: XIcon, label: '@solmadesimple' },
     { name: 'YouTube', url: 'https://www.youtube.com/@SMSONYOUTUBE', Icon: Youtube, label: 'YouTube' },
-    { name: 'TikTok', url: 'https://www.tiktok.com/@solanamadesimple', Icon: TikTokIcon, label: 'TikTok' },
-    { name: 'Instagram', url: 'https://www.instagram.com/smscrypto', Icon: Instagram, label: 'Insta' },
+    { name: 'TikTok', url: 'https://www.tiktok.com/@smsontiktokk', Icon: TikTokIcon, label: 'TikTok' },
+    { name: 'Instagram', url: 'https://www.instagram.com/smsoninstaa', Icon: Instagram, label: 'Insta' },
     { name: 'LinkedIn', url: 'https://www.linkedin.com/in/sean-suvie-77a35018b/', Icon: Linkedin, label: 'LinkedIn' },
     { name: 'Book Call', url: 'https://calendly.com/seanmsuvie/30min', Icon: Calendar, label: "Let's chat!" }
   ];
