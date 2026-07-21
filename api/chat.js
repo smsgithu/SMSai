@@ -366,7 +366,7 @@ export default async function handler(req, res) {
     }
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-5',
       max_tokens: 2048,
       system: contextualSystemPrompt,
       messages: formattedMessages,
