@@ -631,7 +631,6 @@ function App() {
               {walletConnected ? (
                 <>
                   <button type="button" onClick={() => setShowWalletMenu((open) => !open)} className="border border-white/10 rounded-full px-3 py-1.5 flex items-center gap-2">
-                    <AvatarBadge name={displayName} avatarId={avatarId} address={walletAddress} size={22} />
                     <span className="text-left">
                       <span className="block text-xs text-white">{displayName || shortenAddress(walletAddress)}</span>
                       <span className="block text-[10px] text-[#8C8C8C]">{userXP} XP · {questionCount} questions</span>
