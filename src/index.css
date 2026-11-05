@@ -1,3 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  margin: 0;
+  background: #0B0B0B;
+  color: #ffffff;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.wordmark {
+  width: 180px;
+  height: auto;
+  display: block;
+  background: transparent;
+}
+
+.signature-mark {
+  width: 128px;
+  height: auto;
+  display: block;
+  background: transparent;
+}
+
+@media (min-width: 640px) {
+  .wordmark {
+    width: 220px;
+  }
+}

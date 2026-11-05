@@ -1,6 +1,9 @@
 // /api/chat.js - Claude API with RAG knowledge injection + Solana Docs .md integration
 
 import Anthropic from '@anthropic-ai/sdk';
+import { isWalletAddress } from '../shared/product.js';
+import { requireSession } from './lib/sessions.js';
+import { awardConnectedQuestion } from './lib/xp.js';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -124,7 +127,7 @@ const SOLANA_KNOWLEDGE = `
 - Uses Proof of History (PoH) + Proof of Stake (PoS)
 - ~400ms block time, 65,000+ TPS theoretical, ~$0.00025 per transaction
 - SOL token: pay fees, stake for ~6-8% APY, governance
-- For current SOL price, always use web search — prices change constantly
+- For current SOL price, always use web search. Prices change constantly
 - One of the largest blockchains by daily active users and transaction volume
 
 ## Solana Mobile
@@ -161,7 +164,7 @@ const SOLANA_KNOWLEDGE = `
 - **Phoenix**: High-performance order book DEX
 
 **Lending & Borrowing:**
-- **Kamino**: Leading DeFi hub — lending, liquidity vaults, leverage, KMNO token
+- **Kamino**: Leading DeFi hub. Lending, liquidity vaults, leverage, KMNO token
 - **Marginfi**: Lending with points/rewards program, mrgn token
 - **Solend**: Original Solana lending protocol
 
@@ -199,11 +202,11 @@ const SOLANA_KNOWLEDGE = `
 - Always check: liquidity locked/burned, contract verified, team doxxed
 - Use Solscan or Birdeye to verify before buying
 
-## Solana Ecosystem — Key Projects
+## Solana Ecosystem. Key Projects
 - **Jupiter (JUP)**: DEX aggregator, perps, limit orders, DCA, launchpad
 - **Jito (JTO)**: MEV infrastructure + liquid staking (JitoSOL)
 - **Marinade (MNDE)**: Liquid staking pioneer, mSOL
-- **Kamino (KMNO)**: DeFi hub — lending, leverage, liquidity
+- **Kamino (KMNO)**: DeFi hub. Lending, leverage, liquidity
 - **Tensor (TNSR)**: NFT marketplace and trading infrastructure
 - **Pyth (PYTH)**: Oracle network, provides price feeds to DeFi protocols
 - **Wormhole (W)**: Cross-chain bridge and messaging protocol
@@ -217,9 +220,9 @@ const SOLANA_KNOWLEDGE = `
 
 ## Blinks & Actions
 - **Solana Actions**: Standard for URLs that trigger blockchain transactions
-- **Blinks** (Blockchain Links): Share Actions anywhere — social media, websites, emails
+- **Blinks** (Blockchain Links): Share Actions anywhere. Social media, websites, emails
 - Enables one-click transactions from Twitter/X, Discord, anywhere with a link
-- Example use cases: tip SOL, mint NFT, swap tokens — all from a shareable link
+- Example use cases: tip SOL, mint NFT, swap tokens. All from a shareable link
 - Growing adoption across Solana ecosystem apps
 
 ## Token Extensions (Token-2022)
@@ -246,8 +249,8 @@ const SOLANA_KNOWLEDGE = `
 - Projects: Ondo Finance (tokenized treasuries), various stablecoin issuers
 
 ## Security Best Practices
-- NEVER share seed phrase or private keys — no legitimate service will ask
-- Verify URLs before connecting wallet — phishing is extremely common
+- NEVER share seed phrase or private keys. No legitimate service will ask
+- Verify URLs before connecting wallet. Phishing is extremely common
 - No project will DM you first asking to connect wallet
 - Use burner wallets for risky activities (new mints, unknown airdrops)
 - Revoke unused token approvals at revoke.cash
@@ -265,7 +268,7 @@ const SOLANA_KNOWLEDGE = `
 - **QUIC**: Solana's transport protocol for validators
 
 ## Key Tools & Resources
-- **solscan.io**: Block explorer — view transactions, tokens, wallets
+- **solscan.io**: Block explorer. View transactions, tokens, wallets
 - **solana.fm**: Alternative explorer with more analytics
 - **birdeye.so**: Token charts and DeFi analytics
 - **dexscreener.com**: DEX pair analytics across chains
@@ -282,10 +285,10 @@ ${SOLANA_KNOWLEDGE}
 
 ## Your Personality
 - Friendly, patient, and encouraging
-- Explain complex topics simply — like talking to a smart friend who knows crypto
+- Explain complex topics simply. Like talking to a smart friend who knows crypto
 - Use analogies to everyday things when helpful
 - Be honest about risks (especially with memecoins and DeFi)
-- Never give financial advice — educate, don't recommend specific investments
+- Never give financial advice. Educate, don't recommend specific investments
 
 ## Response Guidelines
 - Keep responses concise but complete
@@ -302,29 +305,34 @@ ${SOLANA_KNOWLEDGE}
 - **Always search for**: new projects, tokens, or protocols you're less certain about
 - **Always search for**: recent governance votes, protocol changes, ecosystem news
 - **Don't search for**: basic concepts you already know well (what is staking, how wallets work, etc.)
-- When in doubt about whether info is current — search first
+- When in doubt about whether info is current, search first
 
 ## What You Help With
 - Explaining Solana concepts (wallets, staking, DeFi, NFTs, memecoins)
-- Step-by-step guides (setting up wallet, staking, swapping tokens)
+- Step-by-step guides (setting up a wallet, staking, swapping tokens)
 - Understanding risks and how to stay safe
-- Comparing protocols and choosing between options
-- Solana Mobile (Seeker phone, Saga, Seed Vault, dApp Store)
+- Explaining how protocols differ, without telling people what to buy
+- Solana Mobile (Seeker, Saga, Seed Vault, Mobile Wallet Adapter)
 - Current ecosystem news and updates (via web search)
 - Troubleshooting common issues
 
 ## What to Avoid
 - Specific investment advice ("you should buy X")
-- Price predictions
+- Price predictions, token picks, and get-rich talk
 - Promoting specific memecoins
 - Guaranteeing returns or safety
+- Em dashes. Use periods, commas, or new lines
+- The phrase "plain English". Say simple, easy to understand, or no jargon
+- Any downloadable book, PDF, or guide file
+- Claiming the official Solana dApp Store listing is currently live. You may say SMSai runs in the browser and can talk to Solana Mobile wallets
+- Asking for a seed phrase, private key, or password. Tell people never to share those, including with you
 
-Remember: You represent Solana Made Simple — make crypto accessible and understandable for everyone, from complete beginners to intermediate users!`;
+Remember: You represent Solana Made Simple. Make Solana easy to understand for everyone, from complete beginners to intermediate users. This is education, not financial advice.`;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -362,7 +370,7 @@ export default async function handler(req, res) {
     }
 
     if (wallet_address) {
-      contextualSystemPrompt += `\n\nNote: This user has connected their Solana wallet — they likely have some hands-on crypto experience. You can be slightly more technical when appropriate, but still keep things clear and accessible.`;
+      contextualSystemPrompt += `\n\nNote: This user has connected their Solana wallet. They likely have some hands-on crypto experience. You can be slightly more technical when appropriate, but still keep things clear and accessible.`;
     }
 
     const response = await anthropic.messages.create({
@@ -387,7 +395,25 @@ export default async function handler(req, res) {
       content = "I'm sorry, I couldn't generate a response. Please try again.";
     }
 
-    return res.status(200).json({ content });
+    let progress = { xp_awarded: false };
+    if (isWalletAddress(wallet_address) && lastUserMessage?.content) {
+      try {
+        const session = await requireSession(req);
+        if (session?.wallet_address === wallet_address) {
+          const awarded = await awardConnectedQuestion(wallet_address);
+          if (awarded) {
+            progress = { xp_awarded: true, xp: awarded.xp, questions_asked: awarded.questions_asked };
+          }
+        } else {
+          progress = { xp_awarded: false, auth_error: 'sign_in_required' };
+        }
+      } catch (xpError) {
+        console.error('XP award failed:', xpError.message);
+        progress = { xp_awarded: false, auth_error: 'xp_unavailable' };
+      }
+    }
+
+    return res.status(200).json({ content, ...progress });
 
   } catch (error) {
     console.error('Chat API error:', error);
