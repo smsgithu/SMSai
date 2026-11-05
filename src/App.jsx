@@ -14,7 +14,7 @@ import {
 import { FREE_QUESTION_LIMIT, WELCOME_MESSAGE, shortenAddress } from '../shared/product.js';
 import { authHeaders, clearSession, rememberSession } from './lib/api.js';
 import { signWalletMessage } from './lib/sign.js';
-import AvatarBadge from './components/AvatarBadge.jsx';
+import ChatUserIdentity from './components/ChatUserIdentity.jsx';
 import HelpModal from './components/HelpModal.jsx';
 import InfoModal from './components/InfoModal.jsx';
 import LeaderboardModal from './components/LeaderboardModal.jsx';
@@ -725,29 +725,32 @@ function App() {
 
           <div className="space-y-3">
             {messages.map((message, index) => (
-              <div key={`${message.timestamp}-${index}`} className={`flex gap-2.5 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div key={`${message.timestamp}-${index}`} className={`flex gap-2.5 ${message.role === 'user' ? 'min-w-0 justify-end' : 'justify-start'}`}>
                 {message.role === 'assistant' && (
                   <div className="w-8 h-8 rounded-xl bg-[#9945FF] text-[#0B0B0B] flex items-center justify-center shrink-0">
                     <Sparkles className="w-3.5 h-3.5" />
                   </div>
                 )}
-                <div className="max-w-[85%]">
-                  <div
-                    className="rounded-2xl px-4 py-3 text-sm leading-relaxed"
-                    style={message.role === 'user'
-                      ? { background: 'linear-gradient(135deg, #9945FF, #14F195)', color: '#0B0B0B' }
-                      : { background: '#161616', border: '1px solid rgba(255,255,255,0.08)' }}
-                  >
-                    <ReactMarkdown className={`prose prose-sm max-w-none [&>p]:mb-2 [&>p:last-child]:mb-0 ${message.role === 'user' ? 'prose-invert [&_strong]:text-black [&_a]:text-black' : 'prose-invert [&_a]:text-[#14F195] [&_code]:text-[#14F195]'}`}>
-                      {message.content}
-                    </ReactMarkdown>
+                <div className={message.role === 'user' ? 'max-w-[85%] min-w-0 flex flex-col items-end' : 'max-w-[85%]'}>
+                  {message.role === 'user' && walletConnected && (
+                    <ChatUserIdentity name={displayName} avatarId={avatarId} address={walletAddress} />
+                  )}
+                  <div className={message.role === 'user' ? 'max-w-full' : undefined}>
+                    <div
+                      className="rounded-2xl px-4 py-3 text-sm leading-relaxed"
+                      style={message.role === 'user'
+                        ? { background: 'linear-gradient(135deg, #9945FF, #14F195)', color: '#0B0B0B' }
+                        : { background: '#161616', border: '1px solid rgba(255,255,255,0.08)' }}
+                    >
+                      <ReactMarkdown className={`prose prose-sm max-w-none [&>p]:mb-2 [&>p:last-child]:mb-0 ${message.role === 'user' ? 'prose-invert [&_strong]:text-black [&_a]:text-black' : 'prose-invert [&_a]:text-[#14F195] [&_code]:text-[#14F195]'}`}>
+                        {message.content}
+                      </ReactMarkdown>
+                    </div>
+                    <p className="text-[10px] text-[#8C8C8C] mt-1 px-1 font-mono">{formatTime(message.timestamp)}</p>
                   </div>
-                  <p className="text-[10px] text-[#8C8C8C] mt-1 px-1 font-mono">{formatTime(message.timestamp)}</p>
                 </div>
-                {message.role === 'user' && (
-                  walletConnected
-                    ? <AvatarBadge name={displayName} avatarId={avatarId} address={walletAddress} size={32} />
-                    : <div className="w-8 h-8 rounded-xl border border-white/10 flex items-center justify-center"><User className="w-3.5 h-3.5 text-[#8C8C8C]" /></div>
+                {message.role === 'user' && !walletConnected && (
+                  <div className="w-8 h-8 rounded-xl border border-white/10 flex items-center justify-center shrink-0"><User className="w-3.5 h-3.5 text-[#8C8C8C]" /></div>
                 )}
               </div>
             ))}

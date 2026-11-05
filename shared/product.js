@@ -75,6 +75,13 @@ export function initialsFromName(name) {
   return parts.map((part) => part[0]).join('').toUpperCase();
 }
 
+export function chatIdentityLabel({ name, address } = {}) {
+  const cleaned = String(name || '').trim().replace(/\s+/g, ' ');
+  if (cleaned) return cleaned;
+  const short = shortenAddress(address);
+  return short || 'You';
+}
+
 export function leaderboardLabel(user) {
   const name = String(user?.display_name || '').trim();
   if (name) return name;
