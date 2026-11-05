@@ -68,6 +68,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [solPrice, setSolPrice] = useState(null);
   const [btcPrice, setBtcPrice] = useState(null);
+  const [orePrice, setOrePrice] = useState(null);
   const [sessionCount, setSessionCount] = useState(null);
   const [visitsUnavailable, setVisitsUnavailable] = useState(false);
   const [walletConnected, setWalletConnected] = useState(false);
@@ -272,9 +273,12 @@ function App() {
   useEffect(() => {
     const fetchPrices = async () => {
       try {
-        const cgData = await (await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana,bitcoin&vs_currencies=usd&include_24hr_change=true')).json();
-        setSolPrice({ price: cgData.solana.usd, change: cgData.solana.usd_24h_change });
-        setBtcPrice({ price: cgData.bitcoin.usd, change: cgData.bitcoin.usd_24h_change });
+        // CoinGecko id "ore" is the official ORE mint from regolith-labs/ore:
+        // oreoU2P8bN6jkk3jbaiVxYnG1dCXcYxwhwyK9jSybcp
+        const cgData = await (await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana,bitcoin,ore&vs_currencies=usd&include_24hr_change=true')).json();
+        if (cgData.solana) setSolPrice({ price: cgData.solana.usd, change: cgData.solana.usd_24h_change });
+        if (cgData.bitcoin) setBtcPrice({ price: cgData.bitcoin.usd, change: cgData.bitcoin.usd_24h_change });
+        if (cgData.ore) setOrePrice({ price: cgData.ore.usd, change: cgData.ore.usd_24h_change });
       } catch (error) {
         console.error('Failed to fetch prices:', error);
       }
@@ -657,7 +661,7 @@ function App() {
       </header>
 
       <div className="border-b border-white/10 bg-[#0B0B0B] px-4 py-2">
-        <div className="max-w-6xl mx-auto flex justify-center items-center gap-6 sm:gap-10 text-xs">
+        <div className="max-w-6xl mx-auto flex flex-wrap justify-center items-center gap-x-5 gap-y-1 sm:gap-x-10 text-xs">
           {solPrice && (
             <div className="flex items-center gap-2">
               <span className="tracking-widest text-[#9945FF]">SOL</span>
@@ -670,6 +674,13 @@ function App() {
               <span className="tracking-widest text-[#f7931a]">BTC</span>
               <span className="tabular-nums">${(btcPrice.price / 1000).toFixed(1)}k</span>
               <span className={btcPrice.change >= 0 ? 'text-[#14F195]' : 'text-red-400'}>{btcPrice.change >= 0 ? '+' : ''}{btcPrice.change.toFixed(1)}%</span>
+            </div>
+          )}
+          {orePrice && (
+            <div className="flex items-center gap-2">
+              <span className="tracking-widest text-[#F5C542]">ORE</span>
+              <span className="tabular-nums">${orePrice.price.toFixed(2)}</span>
+              <span className={orePrice.change >= 0 ? 'text-[#14F195]' : 'text-red-400'}>{orePrice.change >= 0 ? '+' : ''}{orePrice.change.toFixed(1)}%</span>
             </div>
           )}
           <div className="hidden sm:block text-[#8C8C8C]">
