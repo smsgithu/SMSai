@@ -1,7 +1,7 @@
 {
   "name": "SMSai",
   "short_name": "SMSai",
-  "description": "Your AI Guide to the Solana Ecosystem",
+  "description": "Your AI Guide to Solana",
   "scope": "/",
   "start_url": "/",
   "icons": [
@@ -16,8 +16,8 @@
       "type": "image/png"
     }
   ],
-  "theme_color": "#1a1a2e",
-  "background_color": "#1a1a2e",
+  "theme_color": "#0B0B0B",
+  "background_color": "#0B0B0B",
   "display": "standalone",
   "orientation": "portrait"
 }
