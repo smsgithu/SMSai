@@ -30,3 +30,23 @@ body {
     width: 220px;
   }
 }
+
+/* Full display name beside a chat message. Wraps inside the column on narrow webviews, including the Seeker dApp. */
+.chat-user-identity {
+  display: inline-block;
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 1rem;
+  font-family: "Space Grotesk", Inter, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: right;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: break-word;
+  word-break: normal;
+}

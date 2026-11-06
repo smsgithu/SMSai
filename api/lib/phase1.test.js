@@ -11,6 +11,8 @@ import {
   XP_PER_QUESTION,
   buildSignInMessage,
   isDiscordWebhook,
+  chatIdentityLabel,
+  initialsFromName,
   leaderboardLabel,
   looksLikeSecret,
   validateDisplayName,
@@ -116,6 +118,35 @@ test('profiles, help, and earn rates follow the phase 1 rules', () => {
   assert.equal(help.ok, true);
   assert.equal(help.username, 'SolUser');
   assert.equal(validateHelpRequest({ topic: 'Seed phrase', description: seed, discordUsername: '' }).ok, false);
+});
+
+test('chat messages use the full display name and leave other initials alone', () => {
+  assert.equal(chatIdentityLabel({ name: 'SMS' }), 'SMS');
+  assert.equal(initialsFromName('SMS'), 'SM');
+  assert.equal(chatIdentityLabel({ name: 'Solana Made Simple' }), 'Solana Made Simple');
+  assert.equal(chatIdentityLabel({ name: '  Sol Kid  ' }), 'Sol Kid');
+  const maxName = 'A'.repeat(24);
+  assert.equal(chatIdentityLabel({ name: maxName }), maxName);
+  assert.equal(chatIdentityLabel({ name: '', address: 'Abcdefghijklmnopqrstuvwxyz1234567890' }), 'Abcd...7890');
+  assert.equal(chatIdentityLabel({}), 'You');
+
+  const app = readFileSync(new URL('../../src/App.jsx', import.meta.url), 'utf8');
+  const identity = readFileSync(new URL('../../src/components/ChatUserIdentity.jsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../../src/index.css', import.meta.url), 'utf8');
+  const leaderboard = readFileSync(new URL('../../src/components/LeaderboardModal.jsx', import.meta.url), 'utf8');
+  const profile = readFileSync(new URL('../../src/components/ProfileModal.jsx', import.meta.url), 'utf8');
+  const badge = readFileSync(new URL('../../src/components/AvatarBadge.jsx', import.meta.url), 'utf8');
+
+  assert.match(app, /ChatUserIdentity/);
+  assert.doesNotMatch(app, /AvatarBadge/);
+  assert.match(app, /displayName \|\| shortenAddress\(walletAddress\)/);
+  assert.match(identity, /chatIdentityLabel/);
+  assert.doesNotMatch(identity, /initialsFromName|truncate|line-clamp|ellipsis|whitespace-nowrap|text-overflow/);
+  assert.match(css, /\.chat-user-identity[\s\S]*overflow-wrap:\s*break-word/);
+  assert.doesNotMatch(css, /chat-user-identity[\s\S]*text-overflow:\s*ellipsis/);
+  assert.match(leaderboard, /AvatarBadge/);
+  assert.match(profile, /AvatarBadge/);
+  assert.match(badge, /initialsFromName/);
 });
 
 test('app copy uses the brand mark and does not send client XP', () => {
