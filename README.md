@@ -45,6 +45,21 @@ curl -sS -X POST "https://www.smsai.fun/api/launch-reset" \
 
 If the flag is missing, the route returns 404 and does not touch the database. If the reset already ran, the route returns 409 and does not zero scores again. There is no reset button in the app.
 
+### Continue with email
+
+Optional. Wallet connect stays as it is.
+
+Set these in the environment when the Privy dashboard app is ready. Leave them empty until then. `Continue with email` then says email sign-in is not connected, and Phantom, Solflare, Backpack, Jupiter, and Seed Vault still work.
+
+- `VITE_PRIVY_APP_ID`: public Privy app id
+- `VITE_PRIVY_CLIENT_ID`: optional Privy app client id
+- `PRIVY_APP_ID`: same app id, server only
+- `PRIVY_APP_SECRET`: server only
+
+In the Privy dashboard, turn on email login and Solana embedded wallets. Do not put the app secret in a `VITE_` variable.
+
+Email sign-in creates a Solana wallet inside SMSai. That wallet is the profile, chat, and XP key. Linking Phantom, Solflare, Backpack, Jupiter, or Seed Vault asks for a signature and does not combine XP or balances. There is no automatic merge by email. Export uses Privy's own window and is optional.
+
 ### Get Help
 
 Set `DISCORD_TICKET_WEBHOOK` to a Discord webhook URL when the Discord side is ready. Until then, the form tells people help is not connected and does not send the note. The form asks for a topic and a description. A Discord username is optional so a reply has somewhere to go. It does not ask for a seed phrase, private key, or password.

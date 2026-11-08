@@ -20,7 +20,7 @@ export default function InfoModal({ onClose, onHelp }) {
           </section>
           <section>
             <h3 className="font-display text-white mb-1">How it works</h3>
-            <p>You can ask 5 questions with no wallet. After that, connect Phantom, Solflare, Backpack, or a Solana Mobile wallet (Seed Vault through the Mobile Wallet Adapter) to keep asking. A signed-in wallet also earns XP and can save chats.</p>
+            <p>You can ask 5 questions with no wallet. After that, connect Phantom, Solflare, Backpack, or a Solana Mobile wallet (Seed Vault through the Mobile Wallet Adapter). You can also continue with email when that option is turned on. Email creates a Solana wallet in SMSai. A signed-in wallet earns XP and can save chats.</p>
           </section>
           <section>
             <h3 className="font-display text-white mb-1">XP, profiles, and the leaderboard</h3>

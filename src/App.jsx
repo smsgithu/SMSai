@@ -14,6 +14,9 @@ import {
 import { FREE_QUESTION_LIMIT, WELCOME_MESSAGE, shortenAddress } from '../shared/product.js';
 import { authHeaders, clearSession, rememberSession } from './lib/api.js';
 import { signWalletMessage } from './lib/sign.js';
+import EmailSignInModal from './components/EmailSignInModal.jsx';
+import EmailUnavailable from './components/EmailUnavailable.jsx';
+import PrivySessionBridge from './components/PrivySessionBridge.jsx';
 import ChatUserIdentity from './components/ChatUserIdentity.jsx';
 import HelpModal from './components/HelpModal.jsx';
 import InfoModal from './components/InfoModal.jsx';
@@ -62,7 +65,7 @@ const welcomeMessage = () => ({ role: 'assistant', content: WELCOME_MESSAGE, tim
 const formatTime = (date) => new Date(date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 const haptic = (duration = 10) => { if (navigator.vibrate) navigator.vibrate(duration); };
 
-function App() {
+function App({ privyEnabled = false }) {
   const [messages, setMessages] = useState([welcomeMessage()]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -73,6 +76,11 @@ function App() {
   const [visitsUnavailable, setVisitsUnavailable] = useState(false);
   const [walletConnected, setWalletConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState('');
+  const [walletKind, setWalletKind] = useState('');
+  const [showEmail, setShowEmail] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const [showLink, setShowLink] = useState(false);
+  const [linkMessage, setLinkMessage] = useState('');
   const [userXP, setUserXP] = useState(0);
   const [questionCount, setQuestionCount] = useState(0);
   const [displayName, setDisplayName] = useState('');
@@ -100,6 +108,10 @@ function App() {
   const hasTrackedSession = useRef(false);
   const walletMenuRef = useRef(null);
   const chatState = useRef({});
+  const privyRef = useRef(null);
+  const registerPrivy = useCallback((api) => {
+    privyRef.current = api;
+  }, []);
 
   chatState.current = { walletConnected, walletAddress, messages, currentChatId };
 
@@ -166,6 +178,7 @@ function App() {
 
   const applyUser = useCallback((user, token) => {
     setWalletAddress(user.wallet_address);
+    setWalletKind(user.wallet_type || '');
     setWalletConnected(true);
     setUserXP(user.xp || 0);
     setQuestionCount(user.questions_asked || 0);
@@ -220,8 +233,10 @@ function App() {
 
   const disconnectWallet = useCallback(() => {
     if (chatState.current.messages.length > 1) saveCurrentChat();
+    const endPrivy = privyRef.current?.logout;
     setWalletConnected(false);
     setWalletAddress('');
+    setWalletKind('');
     setUserXP(0);
     setQuestionCount(0);
     setDisplayName('');
@@ -230,7 +245,12 @@ function App() {
     setSavedChats([]);
     setCurrentChatId(null);
     setProfileOpen(false);
+    setShowEmail(false);
+    setShowExport(false);
+    setShowLink(false);
+    setLinkMessage('');
     clearSession();
+    if (endPrivy) endPrivy().catch(() => {});
   }, [saveCurrentChat]);
 
   useEffect(() => {
@@ -398,6 +418,95 @@ function App() {
     }
   };
 
+  const readExternalAddress = async (walletName) => {
+    const walletConfig = walletOptions.find((wallet) => wallet.id === walletName);
+    if (!walletConfig) throw new Error('Unknown wallet type.');
+    let publicKey;
+    if (walletConfig.isMwa) {
+      const mwaWallet = findMwaWallet();
+      if (!mwaWallet) throw new Error('Seed Vault is only available on Solana Mobile with Seed Vault enabled.');
+      const result = await mwaWallet.features['standard:connect'].connect();
+      publicKey = result.accounts?.[0]?.address;
+    } else if (walletName === 'jupiter') {
+      const jupiterWallet = findJupiterWallet();
+      if (!jupiterWallet) {
+        if (isMobile && walletConfig.mobileLink) {
+          window.location.href = walletConfig.mobileLink;
+          return null;
+        }
+        throw new Error('Jupiter was not detected.');
+      }
+      const result = await jupiterWallet.features['standard:connect'].connect();
+      publicKey = result.accounts?.[0]?.address;
+    } else {
+      const walletObj = window[walletConfig.window];
+      if (!walletObj || !walletConfig.check(walletObj)) {
+        if (isMobile && walletConfig.mobileLink) {
+          window.location.href = walletConfig.mobileLink;
+          return null;
+        }
+        throw new Error(`${walletConfig.name} was not detected.`);
+      }
+      const response = await walletObj.connect();
+      publicKey = walletName === 'solflare'
+        ? (walletObj.publicKey || response?.publicKey)
+        : (response?.publicKey || walletObj.publicKey);
+      if (publicKey && typeof publicKey !== 'string') publicKey = publicKey.toString();
+    }
+    const address = typeof publicKey === 'string' ? publicKey : publicKey?.toString();
+    if (!address) throw new Error('Could not find that wallet address.');
+    return address;
+  };
+
+  const linkExternalWallet = async (walletName) => {
+    if (walletKind !== 'privy' || !walletAddress) {
+      setLinkMessage('Sign in with email before linking another wallet.');
+      return;
+    }
+    try {
+      const linkedWallet = await readExternalAddress(walletName);
+      if (!linkedWallet) return;
+      const accessToken = await privyRef.current?.getAccessToken?.();
+      if (!accessToken) throw new Error('Email sign-in is not connected yet.');
+      const challengeResponse = await fetch('/api/auth', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ action: 'link-challenge', access_token: accessToken, linked_wallet: linkedWallet }),
+      });
+      const challenge = await challengeResponse.json();
+      if (!challengeResponse.ok) throw new Error(challenge.error || 'Could not start the link.');
+      const signature = await signWalletMessage(walletName, linkedWallet, challenge.message);
+      const linkResponse = await fetch('/api/auth', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          action: 'link-wallet',
+          access_token: accessToken,
+          linked_wallet: linkedWallet,
+          signature,
+          nonce: challenge.nonce,
+        }),
+      });
+      const linked = await linkResponse.json();
+      if (!linkResponse.ok) throw new Error(linked.error || 'The link was rejected.');
+      setShowWalletPrompt(false);
+      setShowLink(false);
+      setLinkMessage('Wallet linked. XP and balances stayed where they were.');
+      setTimeout(() => setLinkMessage(''), 6000);
+    } catch (error) {
+      console.error('Wallet link error:', error);
+      alert(error.message || 'Could not link that wallet.');
+    }
+  };
+
+  const exportEmailWallet = async () => {
+    try {
+      await privyRef.current?.exportWallet?.({ address: walletAddress });
+    } catch (error) {
+      setLinkMessage(error?.message || 'Export did not open. You can keep using this wallet in SMSai. Try again in a regular browser.');
+    }
+  };
+
   const handleSubmit = async (promptText = null) => {
     const userMessage = promptText || input.trim();
     if (!userMessage || loading) return;
@@ -523,12 +632,12 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0B0B0B] text-white">
-      {connectionMessage && (
+      {(connectionMessage || linkMessage) && (
         <div className="fixed top-4 left-1/2 z-50 w-[min(92vw,24rem)] -translate-x-1/2">
           <div className="bg-[#161616] border border-white/10 rounded-2xl px-4 py-2.5 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[#14F195]" />
-            <span className="text-sm text-white/80">{connectionMessage}</span>
-            <button type="button" onClick={() => setConnectionMessage('')} className="ml-auto text-[#8C8C8C]" aria-label="Dismiss"><X className="w-3.5 h-3.5" /></button>
+            <span className="text-sm text-white/80">{connectionMessage || linkMessage}</span>
+            <button type="button" onClick={() => { setConnectionMessage(''); setLinkMessage(''); }} className="ml-auto text-[#8C8C8C]" aria-label="Dismiss"><X className="w-3.5 h-3.5" /></button>
           </div>
         </div>
       )}
@@ -564,14 +673,44 @@ function App() {
           onDisconnect={disconnectWallet}
         />
       )}
+      {privyEnabled && <PrivySessionBridge onReady={registerPrivy} />}
+      {showEmail && privyEnabled && (
+        <EmailSignInModal
+          onClose={() => setShowEmail(false)}
+          onSignedIn={(verified) => {
+            applyUser(verified.user, verified.token);
+            setConnectionMessage(verified.created
+              ? 'Email wallet ready. +20 XP welcome bonus.'
+              : `Welcome back. You have ${verified.user.xp} XP.`);
+            setTimeout(() => setConnectionMessage(''), 5000);
+            loadChats(verified.user.wallet_address);
+          }}
+        />
+      )}
+      {showEmail && !privyEnabled && <EmailUnavailable onClose={() => setShowEmail(false)} />}
+      {showExport && walletKind === 'privy' && (
+        <div className="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center px-3 py-4" onClick={() => setShowExport(false)}>
+          <div role="dialog" aria-modal="true" aria-labelledby="export-title" className="bg-[#161616] border border-white/10 rounded-3xl w-full max-w-md max-h-[85vh] overflow-y-auto p-5" onClick={(event) => event.stopPropagation()}>
+            <h2 id="export-title" className="font-display text-xl text-white mb-3">Your email wallet</h2>
+            <div className="text-sm text-white/80 space-y-3 mb-4">
+              <p>This Solana wallet was created in SMSai when you continued with email. Come back with the same email and a new code.</p>
+              <p>Export is optional. Privy opens its own window to show the key. SMSai does not see that key.</p>
+              <p>Never share that private key. Not with SMSai. Not in Get Help. Not with anyone who asks.</p>
+            </div>
+            <button type="button" onClick={exportEmailWallet} className="w-full min-h-11 bg-gradient-to-r from-[#9945FF] to-[#14F195] text-[#0B0B0B] font-semibold rounded-xl px-4 py-2.5 text-sm mb-2">Export wallet key</button>
+            <button type="button" onClick={() => setShowExport(false)} className="w-full min-h-11 border border-white/10 rounded-xl px-4 py-2 text-sm text-[#8C8C8C]">Close</button>
+          </div>
+        </div>
+      )}
       {showWalletPrompt && (
         <WalletModal
           wallets={walletOptions}
           isMobile={isMobile}
           inWalletBrowser={isInWalletBrowser()}
           hasMwa={Boolean(findMwaWallet())}
-          onClose={() => setShowWalletPrompt(false)}
-          onConnect={(id) => { haptic(); connectWallet(id); }}
+          linkMode={showLink}
+          onClose={() => { setShowWalletPrompt(false); setShowLink(false); }}
+          onConnect={(id) => { haptic(); walletKind === 'privy' && showLink ? linkExternalWallet(id) : connectWallet(id); }}
         />
       )}
 
@@ -638,7 +777,13 @@ function App() {
                     <ChevronDown className="w-3.5 h-3.5 text-[#8C8C8C]" />
                   </button>
                   {showWalletMenu && (
-                    <div className="absolute right-0 top-full mt-2 bg-[#161616] border border-white/10 rounded-xl min-w-40 z-30 overflow-hidden">
+                    <div className="absolute right-0 top-full mt-2 bg-[#161616] border border-white/10 rounded-xl min-w-44 z-30 overflow-hidden">
+                      {walletKind === 'privy' && (
+                        <>
+                          <button type="button" onClick={() => { setShowWalletMenu(false); setShowExport(true); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-white/5">Email wallet</button>
+                          <button type="button" onClick={() => { setShowWalletMenu(false); setShowLink(true); setShowWalletPrompt(true); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-white/5">Link a wallet</button>
+                        </>
+                      )}
                       <button type="button" onClick={() => { setShowWalletMenu(false); setProfileMode(displayName ? 'edit' : 'setup'); setProfileOpen(true); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-white/5 flex items-center gap-2">
                         <User className="w-4 h-4" /> Profile
                       </button>
@@ -649,9 +794,14 @@ function App() {
                   )}
                 </>
               ) : (
-                <button type="button" onClick={() => { haptic(); setShowWalletPrompt(true); }} className="bg-gradient-to-r from-[#9945FF] to-[#14F195] text-[#0B0B0B] font-semibold rounded-full px-4 py-2 text-sm flex items-center gap-2">
-                  <Wallet className="w-4 h-4" /> Connect
-                </button>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <button type="button" onClick={() => { haptic(); setShowEmail(true); }} className="border border-white/15 text-white rounded-full px-3 py-2 text-xs sm:text-sm min-h-11">
+                    Continue with email
+                  </button>
+                  <button type="button" onClick={() => { haptic(); setShowLink(false); setShowWalletPrompt(true); }} className="bg-gradient-to-r from-[#9945FF] to-[#14F195] text-[#0B0B0B] font-semibold rounded-full px-4 py-2 text-sm flex items-center gap-2 min-h-11">
+                    <Wallet className="w-4 h-4" /> Connect
+                  </button>
+                </div>
               )}
             </div>
           </div>

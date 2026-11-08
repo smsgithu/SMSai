@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { sql } from '@vercel/postgres';
-import { buildSignInMessage, isWalletAddress, mapUserRow } from '../../shared/product.js';
+import { buildLinkMessage, buildSignInMessage, isWalletAddress, mapUserRow } from '../../shared/product.js';
 import { ensureSchema } from './schema.js';
 
 export function bearerToken(req) {
@@ -26,6 +26,23 @@ export async function createChallenge(walletAddress) {
   await sql`
     INSERT INTO auth_challenges (nonce, wallet_address, message, expires_at)
     VALUES (${nonce}, ${walletAddress}, ${message}, NOW() + INTERVAL '10 minutes')
+  `;
+  return { nonce, message };
+}
+
+export async function createLinkChallenge({ embeddedWallet, linkedWallet, privyUserId }) {
+  if (!isWalletAddress(embeddedWallet) || !isWalletAddress(linkedWallet)) {
+    const error = new Error('Wallet address is not valid.');
+    error.status = 400;
+    throw error;
+  }
+  await ensureSchema(sql);
+  const nonce = randomBytes(16).toString('hex');
+  const message = buildLinkMessage({ embeddedWallet, linkedWallet, privyUserId, nonce });
+  await sql`DELETE FROM auth_challenges WHERE wallet_address = ${linkedWallet} OR expires_at < NOW()`;
+  await sql`
+    INSERT INTO auth_challenges (nonce, wallet_address, message, expires_at)
+    VALUES (${nonce}, ${linkedWallet}, ${message}, NOW() + INTERVAL '10 minutes')
   `;
   return { nonce, message };
 }

@@ -29,7 +29,7 @@ export const HELP_TOPICS = [
 export const LAUNCH_RESET_CONFIRM = 'ZERO_LEADERBOARD_KEEP_VISITS';
 export const LAUNCH_RESET_ID = 'phase1-xp';
 
-export const WALLET_TYPES = ['phantom', 'solflare', 'backpack', 'seedvault', 'jupiter', 'unknown'];
+export const WALLET_TYPES = ['phantom', 'solflare', 'backpack', 'seedvault', 'jupiter', 'privy', 'unknown'];
 
 export const WELCOME_MESSAGE = `Welcome to **SMSai**
 
@@ -104,6 +104,39 @@ export function buildSignInMessage({ wallet, nonce }) {
     'Sign this message to prove you control this wallet.',
     'This does not move any funds and does not share your seed phrase.',
   ].join('\n');
+}
+
+export function isSignInMessage(message) {
+  return typeof message === 'string' && message.startsWith('SMSai sign-in\n') && message.includes('Site: smsai.fun');
+}
+
+export function buildLinkMessage({ embeddedWallet, linkedWallet, privyUserId, nonce }) {
+  return [
+    'SMSai wallet link',
+    '',
+    'Site: smsai.fun',
+    `Email account: ${privyUserId}`,
+    `Embedded wallet: ${embeddedWallet}`,
+    `Wallet to link: ${linkedWallet}`,
+    `Nonce: ${nonce}`,
+    '',
+    'Link this wallet to your email sign-in.',
+    'This does not combine XP or balances.',
+    'This does not move any funds and does not share your seed phrase.',
+  ].join('\n');
+}
+
+export function isLinkMessage(message, { embeddedWallet, linkedWallet, privyUserId }) {
+  if (typeof message !== 'string' || !message.startsWith('SMSai wallet link\n')) return false;
+  return message.includes('Site: smsai.fun')
+    && message.includes(`Email account: ${privyUserId}`)
+    && message.includes(`Embedded wallet: ${embeddedWallet}`)
+    && message.includes(`Wallet to link: ${linkedWallet}`)
+    && message.includes('This does not combine XP or balances.');
+}
+
+export function xpForNewWallet(userExists) {
+  return userExists ? 0 : XP_ON_CONNECT;
 }
 
 export function mapUserRow(row) {
