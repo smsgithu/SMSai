@@ -22,6 +22,22 @@ export async function ensureSchema(sql) {
     )
   `;
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS privy_accounts (
+      privy_user_id TEXT PRIMARY KEY,
+      embedded_wallet TEXT NOT NULL UNIQUE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS wallet_links (
+      linked_wallet TEXT PRIMARY KEY,
+      privy_user_id TEXT NOT NULL,
+      embedded_wallet TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
   try {
     await sql`
       CREATE UNIQUE INDEX IF NOT EXISTS users_wallet_address_uidx
