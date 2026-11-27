@@ -17,7 +17,6 @@ import { signWalletMessage } from './lib/sign.js';
 import ChatUserIdentity from './components/ChatUserIdentity.jsx';
 import { HomeBasePill, SolanaSchoolPill } from './components/BrandPills.jsx';
 import HelpModal from './components/HelpModal.jsx';
-import HomePromos from './components/HomePromos.jsx';
 import InfoModal from './components/InfoModal.jsx';
 import LeaderboardModal from './components/LeaderboardModal.jsx';
 import ProfileModal from './components/ProfileModal.jsx';
@@ -709,27 +708,24 @@ function App() {
           </div>
 
           {messages.length === 1 && (
-            <>
-              <div className="mb-4">
-                <p className="text-[10px] sm:text-xs text-[#8C8C8C] mb-3 text-center tracking-widest uppercase">Quick start</p>
-                <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                  {quickStartQuestions.map((question) => (
-                    <button
-                      key={question.text}
-                      type="button"
-                      onClick={() => { haptic(); handleSubmit(question.text); }}
-                      className="text-left flex items-center gap-2.5 px-3 py-3 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
-                    >
-                      <span className="w-6 h-6 rounded-lg bg-[#9945FF] text-[#0B0B0B] flex items-center justify-center shrink-0">
-                        {question.icon === 'wallet' ? <Wallet className="w-3 h-3" /> : <Sparkles className="w-3 h-3" />}
-                      </span>
-                      <span className="text-[11px] sm:text-sm text-white/80">{question.text}</span>
-                    </button>
-                  ))}
-                </div>
+            <div className="mb-6">
+              <p className="text-[10px] sm:text-xs text-[#8C8C8C] mb-3 text-center tracking-widest uppercase">Quick start</p>
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                {quickStartQuestions.map((question) => (
+                  <button
+                    key={question.text}
+                    type="button"
+                    onClick={() => { haptic(); handleSubmit(question.text); }}
+                    className="text-left flex items-center gap-2.5 px-3 py-3 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
+                  >
+                    <span className="w-6 h-6 rounded-lg bg-[#9945FF] text-[#0B0B0B] flex items-center justify-center shrink-0">
+                      {question.icon === 'wallet' ? <Wallet className="w-3 h-3" /> : <Sparkles className="w-3 h-3" />}
+                    </span>
+                    <span className="text-[11px] sm:text-sm text-white/80">{question.text}</span>
+                  </button>
+                ))}
               </div>
-              <HomePromos />
-            </>
+            </div>
           )}
 
           <div className="space-y-3">
