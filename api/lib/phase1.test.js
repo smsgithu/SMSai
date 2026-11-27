@@ -149,6 +149,26 @@ test('chat messages use the full display name and leave other initials alone', (
   assert.match(badge, /initialsFromName/);
 });
 
+test('solana school is closed and the home base is a live link', () => {
+  const pills = readFileSync(new URL('../../src/components/BrandPills.jsx', import.meta.url), 'utf8');
+  const app = readFileSync(new URL('../../src/App.jsx', import.meta.url), 'utf8');
+  assert.match(pills, /aria-disabled="true"/);
+  assert.match(pills, /cursor-default/);
+  assert.match(pills, /Coming soon/);
+  assert.match(pills, /alt="Skool"/);
+  assert.match(pills, /logo-skool\.png/);
+  assert.match(pills, /https:\/\/solanamadesimple\.com/);
+  assert.match(pills, /noopener noreferrer/);
+  assert.match(app, /SolanaSchoolPill/);
+  assert.match(app, /HomeBasePill/);
+  assert.doesNotMatch(app, /HomePromos/);
+  const joined = `${pills}\n${app}`;
+  assert.equal(joined.includes('sk' + 'ool.com'), false);
+  assert.equal(joined.includes('Free to join'), false);
+  assert.equal(joined.includes('solana-made-simple'), false);
+  assert.doesNotMatch(pills, /window\.location|location\.href/);
+});
+
 test('app copy uses the brand mark and does not send client XP', () => {
   const app = readFileSync(new URL('../../src/App.jsx', import.meta.url), 'utf8');
   assert.match(app, /logo-wordmark-white\.png/);
@@ -161,6 +181,7 @@ test('app copy uses the brand mark and does not send client XP', () => {
 
   const files = [
     '../../src/App.jsx',
+    '../../src/components/BrandPills.jsx',
     '../../src/components/InfoModal.jsx',
     '../../src/components/HelpModal.jsx',
     '../../src/components/ProfileModal.jsx',

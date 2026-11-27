@@ -15,6 +15,7 @@ import { FREE_QUESTION_LIMIT, WELCOME_MESSAGE, shortenAddress } from '../shared/
 import { authHeaders, clearSession, rememberSession } from './lib/api.js';
 import { signWalletMessage } from './lib/sign.js';
 import ChatUserIdentity from './components/ChatUserIdentity.jsx';
+import { HomeBasePill, SolanaSchoolPill } from './components/BrandPills.jsx';
 import HelpModal from './components/HelpModal.jsx';
 import InfoModal from './components/InfoModal.jsx';
 import LeaderboardModal from './components/LeaderboardModal.jsx';
@@ -655,6 +656,10 @@ function App() {
               )}
             </div>
           </div>
+        </div>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-3 flex flex-wrap items-center justify-start sm:justify-end gap-2">
+          <SolanaSchoolPill />
+          <HomeBasePill />
         </div>
         <div className="h-px bg-gradient-to-r from-[#9945FF] to-[#14F195]" />
       </header>
